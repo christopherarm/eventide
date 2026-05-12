@@ -129,13 +129,7 @@ public enum RecurrenceRuleParser {
     // MARK: - Serializer helpers
 
     private static func rejectPhase2OnSerialize(_ rule: EKRecurrenceRule) throws {
-        if let dows = rule.daysOfTheWeek {
-            if dows.contains(where: { $0.weekNumber != 0 }) {
-                throw RecurrenceRuleParserError.unsupportedFeature(
-                    "Cannot serialize positional BYDAY — Phase 2"
-                )
-            }
-        }
+        // Positional BYDAY (weekNumber != 0) is supported as of Phase 2A.
         if let sp = rule.setPositions, !sp.isEmpty {
             throw RecurrenceRuleParserError.unsupportedFeature(
                 "Cannot serialize BYSETPOS — Phase 2"
@@ -164,17 +158,23 @@ public enum RecurrenceRuleParser {
     }
 
     private static func serializeDayOfWeek(_ d: EKRecurrenceDayOfWeek) -> String {
-        // weekNumber == 0 is guaranteed by rejectPhase2OnSerialize.
+        let code: String
         switch d.dayOfTheWeek {
-        case .sunday:    return "SU"
-        case .monday:    return "MO"
-        case .tuesday:   return "TU"
-        case .wednesday: return "WE"
-        case .thursday:  return "TH"
-        case .friday:    return "FR"
-        case .saturday:  return "SA"
-        @unknown default: return "MO"
+        case .sunday:    code = "SU"
+        case .monday:    code = "MO"
+        case .tuesday:   code = "TU"
+        case .wednesday: code = "WE"
+        case .thursday:  code = "TH"
+        case .friday:    code = "FR"
+        case .saturday:  code = "SA"
+        @unknown default: code = "MO"
         }
+        // weekNumber == 0 → non-positional ("MO"). Otherwise emit RFC 5545
+        // ordwk prefix without leading '+' (canonical: "1FR", "-1MO").
+        if d.weekNumber == 0 {
+            return code
+        }
+        return "\(d.weekNumber)\(code)"
     }
 
     private static func formatUntilUtc(_ date: Date) -> String {

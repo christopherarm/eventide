@@ -95,25 +95,37 @@ final class RecurrenceRuleRoundtripTests: XCTestCase {
         try assertRoundtrip(serialized)
     }
 
-    // MARK: - Serializer refusals (Phase 2 features)
+    // MARK: - Phase 2A round-trips (positional BYDAY)
 
-    func test_serialize_refuses_positionalByDay() throws {
-        // Construct a rule with positional BYDAY directly via EventKit init.
-        let posDay = EKRecurrenceDayOfWeek(dayOfTheWeek: .friday, weekNumber: 1)
+    func test_roundtrip_monthlyFirstFriday() throws {
+        try assertRoundtrip("FREQ=MONTHLY;COUNT=10;BYDAY=1FR")
+    }
+
+    func test_roundtrip_monthlyLastFriday() throws {
+        try assertRoundtrip("FREQ=MONTHLY;COUNT=10;BYDAY=-1FR")
+    }
+
+    func test_roundtrip_monthlySecondToLastMonday() throws {
+        try assertRoundtrip("FREQ=MONTHLY;COUNT=6;BYDAY=-2MO")
+    }
+
+    func test_roundtrip_monthlySecondThursday() throws {
+        try assertRoundtrip("FREQ=MONTHLY;BYDAY=2TH")
+    }
+
+    func test_serialize_emits_positionalByDay() throws {
+        // Direct serializer call: rule built via EventKit init must emit canonical "-1FR".
         let rule = EKRecurrenceRule(
             recurrenceWith: .monthly, interval: 1,
-            daysOfTheWeek: [posDay],
+            daysOfTheWeek: [EKRecurrenceDayOfWeek(dayOfTheWeek: .friday, weekNumber: -1)],
             daysOfTheMonth: nil, monthsOfTheYear: nil,
             weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil,
-            end: EKRecurrenceEnd(occurrenceCount: 5)
+            end: nil
         )
-        XCTAssertThrowsError(try RecurrenceRuleParser.serialize(rule)) { error in
-            guard case RecurrenceRuleParserError.unsupportedFeature = error else {
-                XCTFail("Expected unsupportedFeature, got \(error)")
-                return
-            }
-        }
+        XCTAssertEqual(try RecurrenceRuleParser.serialize(rule), "FREQ=MONTHLY;BYDAY=-1FR")
     }
+
+    // MARK: - Serializer refusals (Phase 2 features still deferred)
 
     func test_serialize_refuses_bySetPos() throws {
         let rule = EKRecurrenceRule(
