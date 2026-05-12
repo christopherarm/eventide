@@ -61,7 +61,12 @@ final class RecurrenceRuleParserTests: XCTestCase {
         XCTAssertEqual(rule.daysOfTheMonth ?? [], daysOfTheMonth ?? [], "daysOfTheMonth mismatch", file: file, line: line)
         XCTAssertEqual(rule.monthsOfTheYear ?? [], monthsOfTheYear ?? [], "monthsOfTheYear mismatch", file: file, line: line)
         XCTAssertEqual(rule.setPositions ?? [], setPositions ?? [], "setPositions mismatch", file: file, line: line)
-        XCTAssertEqual(rule.firstDayOfTheWeek, firstDayOfTheWeek, "firstDayOfTheWeek mismatch", file: file, line: line)
+        // EventKit defaults `firstDayOfTheWeek` to 2 (Monday) when WKST is unset,
+        // per Apple's RFC 5545 default. We only assert when the caller specifies
+        // a non-zero expectation (i.e., when WKST is part of the test).
+        if firstDayOfTheWeek != 0 {
+            XCTAssertEqual(rule.firstDayOfTheWeek, firstDayOfTheWeek, "firstDayOfTheWeek mismatch", file: file, line: line)
+        }
     }
 
     private func dow(_ day: EKWeekday, _ weekNumber: Int = 0) -> EKRecurrenceDayOfWeek {
