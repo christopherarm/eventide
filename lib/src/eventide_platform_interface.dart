@@ -78,6 +78,22 @@ abstract class EventidePlatform extends PlatformInterface {
 
   Future<void> deleteEvent({required String eventId});
 
+  Future<ETEvent> updateEvent({
+    required String eventId,
+    required ETUpdateSpan span,
+    DateTime? occurrenceTime,
+    String? title,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool? isAllDay,
+    String? description,
+    String? url,
+    String? location,
+    Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
+  });
+
   Future<ETEvent> createReminder({required String eventId, required Duration durationBeforeEvent});
 
   Future<ETEvent> deleteReminder({required String eventId, required Duration durationBeforeEvent});
@@ -348,3 +364,18 @@ enum ETAttendanceStatus {
 
   const ETAttendanceStatus({required this.iosStatus, required this.androidStatus});
 }
+
+/// Scope of an [Eventide.updateEvent] call.
+///
+/// - [thisEvent] modifies only the single occurrence identified by
+///   `occurrenceTime`. On iOS this maps to `EKSpan.thisEvent`; on
+///   Android it inserts a detached child row with `ORIGINAL_ID` and
+///   `ORIGINAL_INSTANCE_TIME` pointing at the master.
+///
+/// - [thisAndFuture] terminates the master series at `occurrenceTime`
+///   (exclusive) and writes a new master starting at that time with
+///   the modified fields. On iOS this maps to `EKSpan.futureEvents`.
+///
+/// - [allEvents] overwrites the master event in place; the change is
+///   visible on every occurrence of the series.
+enum ETUpdateSpan { thisEvent, thisAndFuture, allEvents }

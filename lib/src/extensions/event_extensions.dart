@@ -51,3 +51,16 @@ extension EventListToETEvent on List<Event> {
     return map((e) => e.toETEvent()).toList();
   }
 }
+
+extension ETUpdateSpanToPigeon on ETUpdateSpan {
+  UpdateSpan toPigeon() {
+    switch (this) {
+      case ETUpdateSpan.thisEvent:
+        return UpdateSpan.thisEvent;
+      case ETUpdateSpan.thisAndFuture:
+        return UpdateSpan.thisAndFuture;
+      case ETUpdateSpan.allEvents:
+        return UpdateSpan.allEvents;
+    }
+  }
+}

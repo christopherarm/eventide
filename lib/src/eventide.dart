@@ -296,6 +296,64 @@ class Eventide extends EventidePlatform {
     }
   }
 
+  /// Updates an existing event in place. All field parameters follow
+  /// `null = leave unchanged` semantics; pass `""` to clear a string field.
+  ///
+  /// [span] controls how the change applies to recurring series:
+  /// - [ETUpdateSpan.thisEvent]: modify only the occurrence at
+  ///   [occurrenceTime]. iOS creates a detached EKEvent; Android inserts
+  ///   a row with `ORIGINAL_ID`.
+  /// - [ETUpdateSpan.thisAndFuture]: terminate the master at
+  ///   [occurrenceTime] and write a new master starting there.
+  /// - [ETUpdateSpan.allEvents]: overwrite the master in-place.
+  ///
+  /// [occurrenceTime] is required for [ETUpdateSpan.thisEvent] and
+  /// [ETUpdateSpan.thisAndFuture]; ignored for [ETUpdateSpan.allEvents].
+  ///
+  /// Throws an [ETPermissionException] when calendar access is refused, an
+  /// [ETNotFoundException] when [eventId] (or the targeted occurrence) is
+  /// missing, an [ETNotEditableException] when the calendar is read-only,
+  /// and an [ETGenericException] for other failures.
+  @override
+  Future<ETEvent> updateEvent({
+    required String eventId,
+    required ETUpdateSpan span,
+    DateTime? occurrenceTime,
+    String? title,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool? isAllDay,
+    String? description,
+    String? url,
+    String? location,
+    Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
+  }) async {
+    try {
+      final event = await _calendarApi.updateEvent(
+        eventId: eventId,
+        span: span.toPigeon(),
+        occurrenceTimeUtcMs: occurrenceTime?.toUtc().millisecondsSinceEpoch,
+        title: title,
+        startDate: startDate?.toUtc().millisecondsSinceEpoch,
+        endDate: endDate?.toUtc().millisecondsSinceEpoch,
+        isAllDay: isAllDay,
+        description: description,
+        url: url,
+        location: location,
+        reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
+        recurrenceRule: recurrenceRule,
+        excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
+      );
+      return reminders != null
+          ? event.toETEvent().copyWithReminders(reminders)
+          : event.toETEvent();
+    } on PlatformException catch (e) {
+      throw e.toETException();
+    }
+  }
+
   /// Creates a new reminder with the given [durationBeforeEvent] for the event with the given [eventId].
   ///
   /// /!\ Note that a [Duration] in seconds will not be supported by Android for API limitations.
