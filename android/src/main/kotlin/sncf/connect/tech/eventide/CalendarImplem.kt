@@ -766,6 +766,356 @@ class CalendarImplem(
         }
     }
 
+    override fun updateEvent(
+        eventId: String,
+        span: UpdateSpan,
+        occurrenceTimeUtcMs: Long?,
+        title: String?,
+        startDate: Long?,
+        endDate: Long?,
+        isAllDay: Boolean?,
+        description: String?,
+        url: String?,
+        location: String?,
+        reminders: List<Long>?,
+        recurrenceRule: String?,
+        excludedDates: List<Long>?,
+        callback: (Result<Event>) -> Unit
+    ) {
+        permissionHandler.requestWritePermission { granted ->
+            if (!granted) {
+                callback(Result.failure(FlutterError(
+                    code = "ACCESS_REFUSED",
+                    message = "Calendar access has been refused or has not been given yet"
+                )))
+                return@requestWritePermission
+            }
+
+            // Validate RRULE if a new one was supplied.
+            if (!recurrenceRule.isNullOrEmpty()) {
+                val v = RecurrenceRuleValidator.validate(recurrenceRule)
+                if (v is RecurrenceRuleValidator.Result.Invalid) {
+                    callback(Result.failure(FlutterError(
+                        code = "INVALID_RRULE",
+                        message = "Invalid recurrenceRule",
+                        details = v.reason
+                    )))
+                    return@requestWritePermission
+                }
+            }
+
+            // Spans that target an occurrence require occurrenceTimeUtcMs.
+            if (span != UpdateSpan.ALL_EVENTS && occurrenceTimeUtcMs == null) {
+                callback(Result.failure(FlutterError(
+                    code = "INVALID_ARGUMENT",
+                    message = "occurrenceTimeUtcMs is required for THIS_EVENT / THIS_AND_FUTURE spans"
+                )))
+                return@requestWritePermission
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val calendarId = getCalendarId(eventId)
+                    if (!isCalendarWritable(calendarId)) {
+                        callback(Result.failure(FlutterError(
+                            code = "NOT_EDITABLE",
+                            message = "Calendar is not writable"
+                        )))
+                        return@launch
+                    }
+
+                    when (span) {
+                        UpdateSpan.ALL_EVENTS -> updateMasterRow(
+                            eventId = eventId,
+                            title = title,
+                            startDate = startDate,
+                            endDate = endDate,
+                            isAllDay = isAllDay,
+                            description = description,
+                            url = url,
+                            location = location,
+                            recurrenceRule = recurrenceRule,
+                            excludedDates = excludedDates,
+                            callback = callback
+                        )
+                        UpdateSpan.THIS_EVENT -> insertDetachedChild(
+                            masterEventId = eventId,
+                            calendarId = calendarId,
+                            occurrenceTimeUtcMs = occurrenceTimeUtcMs!!,
+                            title = title,
+                            startDate = startDate,
+                            endDate = endDate,
+                            isAllDay = isAllDay,
+                            description = description,
+                            url = url,
+                            location = location,
+                            callback = callback
+                        )
+                        UpdateSpan.THIS_AND_FUTURE -> splitMasterAtOccurrence(
+                            masterEventId = eventId,
+                            calendarId = calendarId,
+                            occurrenceTimeUtcMs = occurrenceTimeUtcMs!!,
+                            title = title,
+                            startDate = startDate,
+                            endDate = endDate,
+                            isAllDay = isAllDay,
+                            description = description,
+                            url = url,
+                            location = location,
+                            recurrenceRule = recurrenceRule,
+                            callback = callback
+                        )
+                    }
+                } catch (e: FlutterError) {
+                    callback(Result.failure(e))
+                } catch (e: Exception) {
+                    callback(Result.failure(FlutterError(
+                        code = "GENERIC_ERROR",
+                        message = e.message,
+                        details = e.cause
+                    )))
+                }
+            }
+        }
+    }
+
+    /// Span = ALL_EVENTS. ContentResolver.update with only non-null fields.
+    private fun updateMasterRow(
+        eventId: String,
+        title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?,
+        description: String?, url: String?, location: String?,
+        recurrenceRule: String?, excludedDates: List<Long>?,
+        callback: (Result<Event>) -> Unit
+    ) {
+        val values = ContentValues()
+        if (title != null) values.put(CalendarContract.Events.TITLE, title)
+        if (startDate != null) values.put(CalendarContract.Events.DTSTART, startDate)
+        if (isAllDay != null) values.put(CalendarContract.Events.ALL_DAY, isAllDay.toInt())
+        if (location != null) values.put(CalendarContract.Events.EVENT_LOCATION, location.ifEmpty { null })
+        if (description != null || url != null) {
+            // Description and URL share storage via DescriptionUrlHelper.
+            val helper = DescriptionUrlHelper()
+            val merged = helper.mergeDescriptionAndUrl(
+                description ?: "",
+                url ?: ""
+            )
+            values.put(CalendarContract.Events.DESCRIPTION, merged?.ifBlank { null })
+        }
+        if (recurrenceRule != null) {
+            if (recurrenceRule.isEmpty()) {
+                values.putNull(CalendarContract.Events.RRULE)
+            } else {
+                values.put(CalendarContract.Events.RRULE, recurrenceRule)
+            }
+        }
+        if (excludedDates != null) {
+            if (excludedDates.isEmpty()) {
+                values.putNull(CalendarContract.Events.EXDATE)
+            } else {
+                values.put(
+                    CalendarContract.Events.EXDATE,
+                    excludedDates.joinToString(",") { formatExdateUtc(it) }
+                )
+            }
+        }
+        // Handle DURATION vs DTEND coupling when start/end change.
+        if (startDate != null || endDate != null) {
+            // Pull current row to know whether the event is recurring and
+            // compute the matching DURATION or DTEND.
+            val current = readEventTimingRow(eventId)
+            val newStart = startDate ?: current.first
+            val newEnd = endDate ?: current.second
+            val effectiveRrule = if (recurrenceRule != null) recurrenceRule else current.third
+            if (!effectiveRrule.isNullOrEmpty()) {
+                val durationSec = (newEnd - newStart) / 1000L
+                values.put(CalendarContract.Events.DURATION, "PT${durationSec}S")
+                values.putNull(CalendarContract.Events.DTEND)
+            } else {
+                values.put(CalendarContract.Events.DTEND, newEnd)
+                values.putNull(CalendarContract.Events.DURATION)
+            }
+        }
+        val uri = android.content.ContentUris.withAppendedId(eventContentUri, eventId.toLong())
+        contentResolver.update(uri, values, null, null)
+        retrieveEvent(eventId, callback)
+    }
+
+    /// Span = THIS_EVENT. Insert a new row with ORIGINAL_ID + ORIGINAL_INSTANCE_TIME.
+    /// The master series stays intact; the new row represents a single detached
+    /// occurrence with modified fields.
+    private fun insertDetachedChild(
+        masterEventId: String,
+        calendarId: String,
+        occurrenceTimeUtcMs: Long,
+        title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?,
+        description: String?, url: String?, location: String?,
+        callback: (Result<Event>) -> Unit
+    ) {
+        val master = readEventForMutation(masterEventId)
+        val newStart = startDate ?: occurrenceTimeUtcMs
+        val newEnd = endDate ?: (occurrenceTimeUtcMs + (master.endDate - master.startDate))
+        val helper = DescriptionUrlHelper()
+        val mergedDescription = helper.mergeDescriptionAndUrl(
+            description ?: master.description,
+            url ?: master.url
+        )?.ifBlank { null }
+        val values = ContentValues().apply {
+            put(CalendarContract.Events.CALENDAR_ID, calendarId)
+            put(CalendarContract.Events.ORIGINAL_ID, masterEventId.toLong())
+            put(CalendarContract.Events.ORIGINAL_INSTANCE_TIME, occurrenceTimeUtcMs)
+            put(CalendarContract.Events.TITLE, title ?: master.title)
+            put(CalendarContract.Events.DTSTART, newStart)
+            put(CalendarContract.Events.DTEND, newEnd)
+            put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
+            put(CalendarContract.Events.ALL_DAY, (isAllDay ?: master.isAllDay).toInt())
+            put(CalendarContract.Events.DESCRIPTION, mergedDescription)
+            put(CalendarContract.Events.EVENT_LOCATION, location ?: master.location)
+        }
+        val uri = contentResolver.insert(eventContentUri, values)
+        val detachedId = uri?.lastPathSegment
+            ?: throw FlutterError(code = "GENERIC_ERROR", message = "Failed to insert detached occurrence")
+        retrieveEvent(detachedId, callback)
+    }
+
+    /// Span = THIS_AND_FUTURE. Terminate the master's RRULE with UNTIL =
+    /// occurrenceTime - 1ms; insert a new master starting at occurrenceTime
+    /// carrying the same RRULE (or an explicit replacement) plus the
+    /// modified fields.
+    private fun splitMasterAtOccurrence(
+        masterEventId: String,
+        calendarId: String,
+        occurrenceTimeUtcMs: Long,
+        title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?,
+        description: String?, url: String?, location: String?,
+        recurrenceRule: String?,
+        callback: (Result<Event>) -> Unit
+    ) {
+        val master = readEventForMutation(masterEventId)
+        val originalRrule = master.recurrenceRule
+            ?: throw FlutterError(
+                code = "INVALID_ARGUMENT",
+                message = "THIS_AND_FUTURE span requires a recurring master"
+            )
+
+        // 1. Terminate the master with UNTIL = occurrenceTime - 1ms.
+        val untilStr = formatExdateUtc(occurrenceTimeUtcMs - 1)
+        val terminatedRrule = withUntil(originalRrule, untilStr)
+        val terminateValues = ContentValues().apply {
+            put(CalendarContract.Events.RRULE, terminatedRrule)
+        }
+        val masterUri = android.content.ContentUris.withAppendedId(eventContentUri, masterEventId.toLong())
+        contentResolver.update(masterUri, terminateValues, null, null)
+
+        // 2. Insert a new master starting at occurrenceTime.
+        val newStart = startDate ?: occurrenceTimeUtcMs
+        val newEnd = endDate ?: (occurrenceTimeUtcMs + (master.endDate - master.startDate))
+        val newRrule = recurrenceRule ?: originalRrule
+        val helper = DescriptionUrlHelper()
+        val mergedDescription = helper.mergeDescriptionAndUrl(
+            description ?: master.description,
+            url ?: master.url
+        )?.ifBlank { null }
+        val values = ContentValues().apply {
+            put(CalendarContract.Events.CALENDAR_ID, calendarId)
+            put(CalendarContract.Events.TITLE, title ?: master.title)
+            put(CalendarContract.Events.DTSTART, newStart)
+            put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
+            put(CalendarContract.Events.ALL_DAY, (isAllDay ?: master.isAllDay).toInt())
+            put(CalendarContract.Events.DESCRIPTION, mergedDescription)
+            put(CalendarContract.Events.EVENT_LOCATION, location ?: master.location)
+            val durationSec = (newEnd - newStart) / 1000L
+            put(CalendarContract.Events.DURATION, "PT${durationSec}S")
+            put(CalendarContract.Events.RRULE, newRrule)
+        }
+        val uri = contentResolver.insert(eventContentUri, values)
+        val newId = uri?.lastPathSegment
+            ?: throw FlutterError(code = "GENERIC_ERROR", message = "Failed to insert continuation master")
+        retrieveEvent(newId, callback)
+    }
+
+    /// Replace any existing UNTIL token in `rrule` with the new value, or
+    /// append `UNTIL=<until>` if none was present.
+    internal fun withUntil(rrule: String, until: String): String {
+        val parts = rrule.split(";")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.uppercase().startsWith("UNTIL=") }
+            .toMutableList()
+        // Drop COUNT too — RFC 5545: COUNT and UNTIL are mutually exclusive.
+        val filtered = parts.filter { !it.uppercase().startsWith("COUNT=") }
+        return (filtered + "UNTIL=$until").joinToString(";")
+    }
+
+    /// Internal data class holding the master fields needed for write-time
+    /// fallbacks (THIS_EVENT / THIS_AND_FUTURE spans inherit unchanged
+    /// fields from the master).
+    private data class MutationContext(
+        val title: String,
+        val description: String?,
+        val url: String?,
+        val location: String?,
+        val startDate: Long,
+        val endDate: Long,
+        val isAllDay: Boolean,
+        val recurrenceRule: String?,
+    )
+
+    /// Loads the minimum master fields needed for a span that inherits from
+    /// the master (THIS_EVENT, THIS_AND_FUTURE). Throws NOT_FOUND if missing.
+    private fun readEventForMutation(eventId: String): MutationContext {
+        val projection = arrayOf(
+            CalendarContract.Events.TITLE,
+            CalendarContract.Events.DESCRIPTION,
+            CalendarContract.Events.EVENT_LOCATION,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
+            CalendarContract.Events.ALL_DAY,
+            CalendarContract.Events.RRULE,
+            CalendarContract.Events.DURATION,
+        )
+        val cursor = contentResolver.query(
+            eventContentUri, projection,
+            "${CalendarContract.Events._ID} = ?", arrayOf(eventId), null
+        ) ?: throw FlutterError(code = "NOT_FOUND", message = "Event $eventId not found")
+        cursor.use {
+            if (!it.moveToNext()) {
+                throw FlutterError(code = "NOT_FOUND", message = "Event $eventId not found")
+            }
+            val title = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.TITLE)) ?: ""
+            val storedDescription = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.DESCRIPTION))
+            val (parsedDescription, parsedUrl) = DescriptionUrlHelper().splitDescriptionAndUrl(storedDescription)
+            val locationCol = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.EVENT_LOCATION))
+            val startDate = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
+            val rruleIdx = it.getColumnIndexOrThrow(CalendarContract.Events.RRULE)
+            val rrule = if (it.isNull(rruleIdx)) null else it.getString(rruleIdx)
+            val durationIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DURATION)
+            val duration = if (it.isNull(durationIdx)) null else it.getString(durationIdx)
+            val endDate = if (rrule != null && duration != null) {
+                startDate + parseDurationToMs(duration)
+            } else {
+                val dtendIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                if (it.isNull(dtendIdx)) startDate else it.getLong(dtendIdx)
+            }
+            val isAllDay = it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)).toBoolean()
+            return MutationContext(
+                title = title,
+                description = parsedDescription,
+                url = parsedUrl,
+                location = locationCol,
+                startDate = startDate,
+                endDate = endDate,
+                isAllDay = isAllDay,
+                recurrenceRule = rrule,
+            )
+        }
+    }
+
+    /// Used by updateMasterRow when only timing fields change: returns
+    /// (DTSTART, effectiveEnd, RRULE) so we can decide DURATION vs DTEND.
+    private fun readEventTimingRow(eventId: String): Triple<Long, Long, String?> {
+        val ctx = readEventForMutation(eventId)
+        return Triple(ctx.startDate, ctx.endDate, ctx.recurrenceRule)
+    }
+
     override fun createReminder(reminder: Long, eventId: String, callback: (Result<Event>) -> Unit) {
         permissionHandler.requestWritePermission { granted ->
             if (!granted) {
