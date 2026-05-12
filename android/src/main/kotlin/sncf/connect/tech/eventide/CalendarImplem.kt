@@ -360,8 +360,16 @@ class CalendarImplem(
         url: String?,
         location: String?,
         reminders: List<Long>?,
+        recurrenceRule: String?,
+        excludedDates: List<Long>?,
         callback: (Result<Event>) -> Unit
     ) {
+        // Phase 1: recurrenceRule/excludedDates accepted in signature; persistence
+        // wired in Step J once Validator and DURATION/DTEND swap land.
+        @Suppress("UNUSED_VARIABLE")
+        val phase1RruleStub = recurrenceRule
+        @Suppress("UNUSED_VARIABLE")
+        val phase1ExdateStub = excludedDates
         permissionHandler.requestWritePermission { granted ->
             if (!granted) {
                 callback(
@@ -423,6 +431,8 @@ class CalendarImplem(
                                     isAllDay = isAllDay,
                                     reminders = reminders ?: emptyList(),
                                     attendees = emptyList(),
+                                    recurrenceRule = null,
+                                    excludedDates = null,
                                 )
                                 callback(Result.success(event))
                             } else {
@@ -483,18 +493,19 @@ class CalendarImplem(
         url: String?,
         location: String?,
         reminders: List<Long>?,
+        recurrenceRule: String?,
+        excludedDates: List<Long>?,
         callback: (Result<Unit>) -> Unit
-    ) = shareEventAsIcs(
-        title = title,
-        startDate = startDate,
-        endDate = endDate,
-        isAllDay = isAllDay,
-        description = description,
-        url = url,
-        location = location,
-        reminders = reminders,
-        callback = callback
-    )
+    ) {
+        // Phase 1: recurrenceRule/excludedDates not yet propagated through ICS path.
+        @Suppress("UNUSED_VARIABLE") val r = recurrenceRule
+        @Suppress("UNUSED_VARIABLE") val e = excludedDates
+        shareEventAsIcs(
+            title = title, startDate = startDate, endDate = endDate, isAllDay = isAllDay,
+            description = description, url = url, location = location, reminders = reminders,
+            callback = callback
+        )
+    }
 
     override fun createEventThroughNativePlatform(
         title: String?,
@@ -505,25 +516,28 @@ class CalendarImplem(
         url: String?,
         location: String?,
         reminders: List<Long>?,
+        recurrenceRule: String?,
+        excludedDates: List<Long>?,
         callback: (Result<Unit>) -> Unit
-    ) = shareEventAsIcs(
-        title = title,
-        startDate = startDate,
-        endDate = endDate,
-        isAllDay = isAllDay,
-        description = description,
-        url = url,
-        location = location,
-        reminders = reminders,
-        callback = callback
-    )
+    ) {
+        @Suppress("UNUSED_VARIABLE") val r = recurrenceRule
+        @Suppress("UNUSED_VARIABLE") val e = excludedDates
+        shareEventAsIcs(
+            title = title, startDate = startDate, endDate = endDate, isAllDay = isAllDay,
+            description = description, url = url, location = location, reminders = reminders,
+            callback = callback
+        )
+    }
 
     override fun retrieveEvents(
         calendarId: String,
         startDate: Long,
         endDate: Long,
+        expandRecurring: Boolean,
         callback: (Result<List<Event>>) -> Unit
     ) {
+        // Phase 1: expandRecurring accepted; Step K rewrites WHERE clause and projection.
+        @Suppress("UNUSED_VARIABLE") val phase1ExpandStub = expandRecurring
         permissionHandler.requestReadPermission { granted ->
             if (!granted) {
                 callback(
@@ -608,7 +622,9 @@ class CalendarImplem(
                                     location = eventLocation,
                                     isAllDay = isAllDay,
                                     reminders = reminders,
-                                    attendees = attendees
+                                    attendees = attendees,
+                                    recurrenceRule = null,
+                                    excludedDates = null
                                 )
                             )
                         }
@@ -1013,7 +1029,9 @@ class CalendarImplem(
                         location = eventLocation,
                         isAllDay = isAllDay,
                         reminders = reminders,
-                        attendees = attendees
+                        attendees = attendees,
+                        recurrenceRule = null,
+                        excludedDates = null
                     )
                 }
             }

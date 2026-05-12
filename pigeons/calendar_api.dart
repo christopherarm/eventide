@@ -40,6 +40,8 @@ abstract class CalendarApi {
     required String? url,
     required String? location,
     required List<int>? reminders,
+    required String? recurrenceRule,
+    required List<int>? excludedDates,
   });
 
   @async
@@ -52,6 +54,8 @@ abstract class CalendarApi {
     required String? url,
     required String? location,
     required List<int>? reminders,
+    required String? recurrenceRule,
+    required List<int>? excludedDates,
   });
 
   @async
@@ -64,10 +68,17 @@ abstract class CalendarApi {
     String? url,
     String? location,
     List<int>? reminders,
+    String? recurrenceRule,
+    List<int>? excludedDates,
   });
 
   @async
-  List<Event> retrieveEvents({required String calendarId, required int startDate, required int endDate});
+  List<Event> retrieveEvents({
+    required String calendarId,
+    required int startDate,
+    required int endDate,
+    required bool expandRecurring,
+  });
 
   @async
   @SwiftFunction('deleteEvent(withId:)')
@@ -122,6 +133,14 @@ final class Event {
   final String? description;
   final String? url;
   final String? location;
+  // RFC 5545 RRULE value (no "RRULE:" prefix), e.g. "FREQ=WEEKLY;BYDAY=MO".
+  // Null for non-recurring events. Phase 1 grammar: FREQ, INTERVAL, COUNT,
+  // UNTIL, BYDAY (non-positional), BYMONTHDAY, BYMONTH. See plan AD-1/AD-3.
+  final String? recurrenceRule;
+  // EXDATE values as ms-since-epoch UTC. Empty list when no exceptions.
+  // Phase 1 iOS limitation: read-side surfaces empty list because EventKit
+  // has no public EXDATE accessor; full round-trip on Android only.
+  final List<int>? excludedDates;
 
   const Event({
     required this.id,
@@ -135,6 +154,8 @@ final class Event {
     required this.description,
     required this.url,
     required this.location,
+    required this.recurrenceRule,
+    required this.excludedDates,
   });
 }
 

@@ -45,7 +45,9 @@ final class EventTests: XCTestCase {
             description: "description",
             url: "url",
             location: nil,
-            reminders: []
+            reminders: [],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success(let event):
@@ -95,7 +97,9 @@ final class EventTests: XCTestCase {
             description: "description",
             url: "url",
             location: nil,
-            reminders: []
+            reminders: [],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -161,7 +165,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: startDate.addingTimeInterval(TimeInterval(-10)).millisecondsSince1970,
-            endDate: endDate.addingTimeInterval(TimeInterval(10)).millisecondsSince1970
+            endDate: endDate.addingTimeInterval(TimeInterval(10)).millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success(let events):
@@ -235,7 +240,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: startDate.addingTimeInterval(TimeInterval(40)).millisecondsSince1970,
-            endDate: endDate.addingTimeInterval(TimeInterval(60)).millisecondsSince1970
+            endDate: endDate.addingTimeInterval(TimeInterval(60)).millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success(let events):
@@ -296,7 +302,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: startDate.addingTimeInterval(TimeInterval(-10)).millisecondsSince1970,
-            endDate: endDate.addingTimeInterval(TimeInterval(10)).millisecondsSince1970
+            endDate: endDate.addingTimeInterval(TimeInterval(10)).millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success:
@@ -341,7 +348,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: startDate.millisecondsSince1970,
-            endDate: endDate.millisecondsSince1970
+            endDate: endDate.millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success(let events):
@@ -530,7 +538,9 @@ final class EventTests: XCTestCase {
             description: "description",
             url: "url",
             location: nil,
-            reminders: []
+            reminders: [],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -573,7 +583,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: Date().millisecondsSince1970,
-            endDate: Date().addingTimeInterval(TimeInterval(10)).millisecondsSince1970
+            endDate: Date().addingTimeInterval(TimeInterval(10)).millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success:
@@ -672,7 +683,9 @@ final class EventTests: XCTestCase {
             description: "description",
             url: "url",
             location: nil,
-            reminders: []
+            reminders: [],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -714,7 +727,8 @@ final class EventTests: XCTestCase {
         calendarImplem.retrieveEvents(
             calendarId: "1",
             startDate: Date().millisecondsSince1970,
-            endDate: Date().addingTimeInterval(TimeInterval(10)).millisecondsSince1970
+            endDate: Date().addingTimeInterval(TimeInterval(10)).millisecondsSince1970,
+            expandRecurring: false
         ) { retrieveEventsResult in
             switch (retrieveEventsResult) {
             case .success:
@@ -815,7 +829,9 @@ final class EventTests: XCTestCase {
             description: "Event in default calendar",
             url: "https://example.com",
             location: "Paris",
-            reminders: [900]
+            reminders: [900],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -862,7 +878,9 @@ final class EventTests: XCTestCase {
             description: "All day event",
             url: nil,
             location: nil,
-            reminders: [3600, 7200]
+            reminders: [3600, 7200],
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -909,7 +927,9 @@ final class EventTests: XCTestCase {
             description: nil,
             url: nil,
             location: nil,
-            reminders: nil
+            reminders: nil,
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -955,7 +975,9 @@ final class EventTests: XCTestCase {
             description: "Created through native UI",
             url: "https://example.com",
             location: nil,
-            reminders: [900] // 15 minutes
+            reminders: [900], // 15 minutes
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -988,7 +1010,9 @@ final class EventTests: XCTestCase {
             description: "This should be canceled",
             url: nil,
             location: nil,
-            reminders: nil
+            reminders: nil,
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1027,7 +1051,9 @@ final class EventTests: XCTestCase {
             description: nil,
             url: nil,
             location: nil,
-            reminders: nil
+            reminders: nil,
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1066,7 +1092,9 @@ final class EventTests: XCTestCase {
             description: "This should work even without permissions",
             url: nil,
             location: nil,
-            reminders: [300, 600] // 5 and 10 minutes
+            reminders: [300, 600], // 5 and 10 minutes
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1098,7 +1126,9 @@ final class EventTests: XCTestCase {
             description: nil,
             url: nil,
             location: nil,
-            reminders: nil
+            reminders: nil,
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1135,7 +1165,9 @@ final class EventTests: XCTestCase {
             description: nil,
             url: nil,
             location: nil,
-            reminders: nil
+            reminders: nil,
+            recurrenceRule: nil,
+            excludedDates: nil
         ) { result in
             switch result {
             case .success:

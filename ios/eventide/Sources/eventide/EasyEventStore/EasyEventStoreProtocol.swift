@@ -17,9 +17,9 @@ protocol EasyEventStoreProtocol {
     
     func deleteCalendar(calendarId: String) throws -> Void
 
-    func createEvent(calendarId: String, title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?) throws -> Event
+    func createEvent(calendarId: String, title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?, recurrenceRule: String?, excludedDates: [Int64]?) throws -> Event
 
-    func createEvent(title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?) throws
+    func createEvent(title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?, recurrenceRule: String?, excludedDates: [Int64]?) throws
 
     func presentEventCreationViewController(
         title: String?,
@@ -33,7 +33,7 @@ protocol EasyEventStoreProtocol {
         completion: @escaping (Result<Void, Error>) -> Void
     )
 
-    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date) throws -> [Event]
+    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date, expandRecurring: Bool) throws -> [Event]
 
     func deleteEvent(eventId: String) throws -> Void
 

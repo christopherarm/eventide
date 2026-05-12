@@ -116,8 +116,14 @@ final class EasyEventStore: EasyEventStoreProtocol {
         description: String?,
         url: String?,
         location: String?,
-        timeIntervals: [TimeInterval]?
+        timeIntervals: [TimeInterval]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?
     ) throws -> Event {
+        // Phase 1: recurrenceRule/excludedDates accepted in signature but not yet
+        // applied to ekEvent. Wired in Step H once RecurrenceRuleParser is implemented.
+        _ = recurrenceRule
+        _ = excludedDates
         let ekEvent = EKEvent(eventStore: eventStore)
 
         guard let ekCalendar = eventStore.calendar(withIdentifier: calendarId) else {
@@ -164,8 +170,13 @@ final class EasyEventStore: EasyEventStoreProtocol {
         description: String?,
         url: String?,
         location: String?,
-        timeIntervals: [TimeInterval]?
+        timeIntervals: [TimeInterval]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?
     ) throws {
+        // Phase 1: recurrenceRule/excludedDates accepted but not yet applied.
+        _ = recurrenceRule
+        _ = excludedDates
         let ekEvent = EKEvent(eventStore: eventStore)
 
         ekEvent.calendar = eventStore.defaultCalendarForNewEvents
@@ -219,7 +230,9 @@ final class EasyEventStore: EasyEventStoreProtocol {
         )
     }
     
-    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date) throws -> [Event] {
+    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date, expandRecurring: Bool) throws -> [Event] {
+        // Phase 1: expandRecurring accepted in signature; dedup wiring lands in Step H.
+        _ = expandRecurring
         guard let calendar = eventStore.calendar(withIdentifier: calendarId) else {
             throw PigeonError(
                 code: "NOT_FOUND",
@@ -418,7 +431,9 @@ fileprivate extension EKEvent {
             } ?? [],
             description: notes,
             url: url?.absoluteString,
-            location: location
+            location: location,
+            recurrenceRule: nil,   // Phase 1: surfaced in Step H once parser+serializer land
+            excludedDates: nil     // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
         )
     }
 }

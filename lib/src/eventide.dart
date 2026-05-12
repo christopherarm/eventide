@@ -129,6 +129,8 @@ class Eventide extends EventidePlatform {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   }) async {
     try {
       final event = await _calendarApi.createEvent(
@@ -141,6 +143,8 @@ class Eventide extends EventidePlatform {
         url: url,
         location: location,
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
+        recurrenceRule: recurrenceRule,
+        excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
 
       return event.toETEvent().copyWithReminders(reminders);
@@ -176,6 +180,8 @@ class Eventide extends EventidePlatform {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   }) async {
     try {
       await _calendarApi.createEventInDefaultCalendar(
@@ -187,6 +193,8 @@ class Eventide extends EventidePlatform {
         url: url,
         location: location,
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
+        recurrenceRule: recurrenceRule,
+        excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
     } on PlatformException catch (e) {
       throw e.toETException();
@@ -217,6 +225,8 @@ class Eventide extends EventidePlatform {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   }) async {
     try {
       await _calendarApi.createEventThroughNativePlatform(
@@ -228,6 +238,8 @@ class Eventide extends EventidePlatform {
         url: url,
         location: location,
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
+        recurrenceRule: recurrenceRule,
+        excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
     } on PlatformException catch (e) {
       throw e.toETException();
@@ -245,7 +257,12 @@ class Eventide extends EventidePlatform {
   ///
   /// Throws a [ETGenericException] if any other error occurs during events retrieval.
   @override
-  Future<Iterable<ETEvent>> retrieveEvents({required String calendarId, DateTime? startDate, DateTime? endDate}) async {
+  Future<Iterable<ETEvent>> retrieveEvents({
+    required String calendarId,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool expandRecurring = false,
+  }) async {
     try {
       final start = (startDate ?? DateTime.now()).toUtc();
       final end = (endDate ?? DateTime.now()).toUtc();
@@ -253,6 +270,7 @@ class Eventide extends EventidePlatform {
         calendarId: calendarId,
         startDate: start.millisecondsSinceEpoch,
         endDate: end.millisecondsSinceEpoch,
+        expandRecurring: expandRecurring,
       );
       return events.toETEventList();
     } on PlatformException catch (e) {

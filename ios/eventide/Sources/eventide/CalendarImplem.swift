@@ -111,6 +111,8 @@ class CalendarImplem: CalendarApi {
         url: String?,
         location: String?,
         reminders: [Int64]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?,
         completion: @escaping (Result<Event, Error>) -> Void) {
         permissionHandler.checkCalendarAccessThenExecute(.writeOnly) { [self] in
             do {
@@ -123,7 +125,9 @@ class CalendarImplem: CalendarApi {
                     description: description,
                     url: url,
                     location: location,
-                    timeIntervals: reminders?.compactMap { TimeInterval(-$0) }
+                    timeIntervals: reminders?.compactMap { TimeInterval(-$0) },
+                    recurrenceRule: recurrenceRule,
+                    excludedDates: excludedDates
                 )
                 completion(.success(createdEvent))
 
@@ -151,6 +155,8 @@ class CalendarImplem: CalendarApi {
         url: String?,
         location: String?,
         reminders: [Int64]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?,
         completion: @escaping (Result<Void, any Error>) -> Void
     ) {
         permissionHandler.checkCalendarAccessThenExecute(.writeOnly) { [self] in
@@ -163,7 +169,9 @@ class CalendarImplem: CalendarApi {
                     description: description,
                     url: url,
                     location: location,
-                    timeIntervals: reminders?.compactMap { TimeInterval(-$0) }
+                    timeIntervals: reminders?.compactMap { TimeInterval(-$0) },
+                    recurrenceRule: recurrenceRule,
+                    excludedDates: excludedDates
                 )
                 completion(.success(()))
 
@@ -192,8 +200,13 @@ class CalendarImplem: CalendarApi {
         url: String?,
         location: String?,
         reminders: [Int64]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?,
         completion: @escaping (Result<Void, any Error>) -> Void
     ) {
+        // Phase 1: recurrenceRule/excludedDates not used by native UI path yet.
+        _ = recurrenceRule
+        _ = excludedDates
         easyEventStore.presentEventCreationViewController(
             title: title,
             startDate: startDate != nil ? Date(from: startDate!) : nil,
@@ -212,6 +225,7 @@ class CalendarImplem: CalendarApi {
         calendarId: String,
         startDate: Int64,
         endDate: Int64,
+        expandRecurring: Bool,
         completion: @escaping (Result<[Event], any Error>) -> Void
     ) {
         permissionHandler.checkCalendarAccessThenExecute(.fullAccess) { [self] in
@@ -219,7 +233,8 @@ class CalendarImplem: CalendarApi {
                 let events = try easyEventStore.retrieveEvents(
                     calendarId: calendarId,
                     startDate: Date(from: startDate),
-                    endDate: Date(from: endDate)
+                    endDate: Date(from: endDate),
+                    expandRecurring: expandRecurring
                 )
                 completion(.success(events))
                 

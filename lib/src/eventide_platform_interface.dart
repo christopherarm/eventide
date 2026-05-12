@@ -39,6 +39,8 @@ abstract class EventidePlatform extends PlatformInterface {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   });
 
   Future<void> createEventInDefaultCalendar({
@@ -50,6 +52,8 @@ abstract class EventidePlatform extends PlatformInterface {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   });
 
   Future<void> createEventThroughNativePlatform({
@@ -61,9 +65,16 @@ abstract class EventidePlatform extends PlatformInterface {
     String? url,
     String? location,
     Iterable<Duration>? reminders,
+    String? recurrenceRule,
+    Iterable<DateTime>? excludedDates,
   });
 
-  Future<Iterable<ETEvent>> retrieveEvents({required String calendarId, DateTime? startDate, DateTime? endDate});
+  Future<Iterable<ETEvent>> retrieveEvents({
+    required String calendarId,
+    DateTime? startDate,
+    DateTime? endDate,
+    bool expandRecurring = false,
+  });
 
   Future<void> deleteEvent({required String eventId});
 

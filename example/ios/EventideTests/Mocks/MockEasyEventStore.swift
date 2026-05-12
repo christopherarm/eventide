@@ -67,7 +67,10 @@ class MockEasyEventStore: EasyEventStoreProtocol {
         return calendars.map { $0.account }
     }
     
-    func createEvent(calendarId: String, title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?) throws -> Event {
+    func createEvent(calendarId: String, title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?, recurrenceRule: String?, excludedDates: [Int64]?) throws -> Event {
+        // Phase 1 mock: recurrenceRule/excludedDates accepted but not stored on MockEvent yet.
+        _ = recurrenceRule
+        _ = excludedDates
         guard let mockCalendar = calendars.first(where: { $0.id == calendarId }) else {
             throw PigeonError(
                 code: "NOT_FOUND",
@@ -93,7 +96,9 @@ class MockEasyEventStore: EasyEventStoreProtocol {
         return mockEvent.toEvent()
     }
     
-    func createEvent(title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?) throws {
+    func createEvent(title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?, recurrenceRule: String?, excludedDates: [Int64]?) throws {
+        _ = recurrenceRule
+        _ = excludedDates
         let mockEvent = MockEvent(
             id: String(calendars.first!.events.count),
             title: title,
@@ -113,7 +118,8 @@ class MockEasyEventStore: EasyEventStoreProtocol {
         completion(.success(()))
     }
     
-    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date) throws -> [Event] {
+    func retrieveEvents(calendarId: String, startDate: Date, endDate: Date, expandRecurring: Bool) throws -> [Event] {
+        _ = expandRecurring
         guard let mockCalendar = calendars.first(where: { $0.id == calendarId }) else {
             throw PigeonError(
                 code: "NOT_FOUND",
@@ -277,7 +283,10 @@ class MockEvent {
             reminders: reminders?.map({ Int64($0) }) ?? [],
             attendees: attendees?.map { $0.toAttendee() } ?? [],
             description: description,
-            url: url
+            url: url,
+            location: location,
+            recurrenceRule: nil,
+            excludedDates: nil
         )
     }
 }
