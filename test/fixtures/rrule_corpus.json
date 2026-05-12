@@ -1,0 +1,564 @@
+{
+  "schema_version": 1,
+  "description": "RRULE test corpus for eventide recurrence support. Combines (a) RRULEs inferred from real Homzie user data, (b) RFC 5545 canonical examples, (c) Google Calendar / Apple Calendar emit patterns observed in the wild, (d) parser edge cases that historically break naive implementations. expected_first_occurrences is the oracle: any conformant RRULE parser (including the iOS EKRecurrenceRule builder and the Android CalendarContract.RRULE consumer) must, when given dtstart_utc and the rrule string, produce exactly these occurrence start times within the test_window. Where dateutil rejects an RRULE (e.g. Apple floating UNTIL), the field contains a \"_parser_note\" object explaining the parser disagreement that we want eventide to handle more gracefully than dateutil.",
+  "test_window": {
+    "start_utc": "2026-05-01T00:00:00+00:00",
+    "end_utc": "2027-12-31T23:59:59+00:00"
+  },
+  "fixtures": [
+    {
+      "id": "iris_00_thai_partner",
+      "source": "inferred-from-firestore",
+      "title": "Thai Partner",
+      "description": "Inferred from 3 actual occurrences (Iris's family, real-world household)",
+      "dtstart_utc": "2026-02-14T11:00:00+00:00",
+      "duration_minutes": 90,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;BYDAY=SA",
+      "expected_first_occurrences": [
+        "2026-02-14T11:00:00+00:00",
+        "2026-02-21T11:00:00+00:00",
+        "2026-02-28T11:00:00+00:00",
+        "2026-03-07T11:00:00+00:00",
+        "2026-03-14T11:00:00+00:00",
+        "2026-03-21T11:00:00+00:00",
+        "2026-03-28T11:00:00+00:00",
+        "2026-04-04T11:00:00+00:00"
+      ],
+      "notes": "sample_count=3"
+    },
+    {
+      "id": "iris_01_too_good_to_go___cit",
+      "source": "inferred-from-firestore",
+      "title": "Too Good To Go - CityBäcker - Borker Straße - Lünen",
+      "description": "Inferred from 3 actual occurrences (Iris's family, real-world household)",
+      "dtstart_utc": "2026-03-18T15:30:00+00:00",
+      "duration_minutes": 30,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;BYDAY=TU,WE",
+      "expected_first_occurrences": [
+        "2026-03-18T15:30:00+00:00",
+        "2026-03-24T15:30:00+00:00",
+        "2026-03-25T15:30:00+00:00",
+        "2026-03-31T15:30:00+00:00",
+        "2026-04-01T15:30:00+00:00",
+        "2026-04-07T15:30:00+00:00",
+        "2026-04-08T15:30:00+00:00",
+        "2026-04-14T15:30:00+00:00"
+      ],
+      "notes": "sample_count=3"
+    },
+    {
+      "id": "iris_02_test_aus_homzie",
+      "source": "inferred-from-firestore",
+      "title": "test aus homzie",
+      "description": "Inferred from 2 actual occurrences (Iris's family, real-world household)",
+      "dtstart_utc": "2026-05-11T19:55:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=DAILY",
+      "expected_first_occurrences": [
+        "2026-05-11T19:55:00+00:00",
+        "2026-05-12T19:55:00+00:00",
+        "2026-05-13T19:55:00+00:00",
+        "2026-05-14T19:55:00+00:00",
+        "2026-05-15T19:55:00+00:00",
+        "2026-05-16T19:55:00+00:00",
+        "2026-05-17T19:55:00+00:00",
+        "2026-05-18T19:55:00+00:00"
+      ],
+      "notes": "sample_count=2"
+    },
+    {
+      "id": "iris_03_live_session_ta+",
+      "source": "inferred-from-firestore",
+      "title": "Live Session Ta+",
+      "description": "Inferred from 2 actual occurrences (Iris's family, real-world household)",
+      "dtstart_utc": "2026-02-24T18:30:00+00:00",
+      "duration_minutes": 120,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;INTERVAL=4;BYDAY=TU",
+      "expected_first_occurrences": [
+        "2026-02-24T18:30:00+00:00",
+        "2026-03-24T18:30:00+00:00",
+        "2026-04-21T18:30:00+00:00",
+        "2026-05-19T18:30:00+00:00",
+        "2026-06-16T18:30:00+00:00",
+        "2026-07-14T18:30:00+00:00",
+        "2026-08-11T18:30:00+00:00",
+        "2026-09-08T18:30:00+00:00"
+      ],
+      "notes": "sample_count=2"
+    },
+    {
+      "id": "rfc_daily_count",
+      "source": "rfc-5545",
+      "title": "Daily for 10 occurrences",
+      "description": "RFC 5545 §3.8.5.3",
+      "dtstart_utc": "2026-09-02T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=DAILY;COUNT=10",
+      "expected_first_occurrences": [
+        "2026-09-02T09:00:00+00:00",
+        "2026-09-03T09:00:00+00:00",
+        "2026-09-04T09:00:00+00:00",
+        "2026-09-05T09:00:00+00:00",
+        "2026-09-06T09:00:00+00:00",
+        "2026-09-07T09:00:00+00:00",
+        "2026-09-08T09:00:00+00:00",
+        "2026-09-09T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_daily_until",
+      "source": "rfc-5545",
+      "title": "Daily UNTIL 2026-12-24",
+      "description": "RFC 5545 §3.8.5.3",
+      "dtstart_utc": "2026-09-02T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=DAILY;UNTIL=20261224T000000Z",
+      "expected_first_occurrences": [
+        "2026-09-02T09:00:00+00:00",
+        "2026-09-03T09:00:00+00:00",
+        "2026-09-04T09:00:00+00:00",
+        "2026-09-05T09:00:00+00:00",
+        "2026-09-06T09:00:00+00:00",
+        "2026-09-07T09:00:00+00:00",
+        "2026-09-08T09:00:00+00:00",
+        "2026-09-09T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_every_other_day",
+      "source": "rfc-5545",
+      "title": "INTERVAL=2 daily",
+      "description": "RFC 5545 §3.8.5.3",
+      "dtstart_utc": "2026-09-02T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=DAILY;INTERVAL=2;COUNT=10",
+      "expected_first_occurrences": [
+        "2026-09-02T09:00:00+00:00",
+        "2026-09-04T09:00:00+00:00",
+        "2026-09-06T09:00:00+00:00",
+        "2026-09-08T09:00:00+00:00",
+        "2026-09-10T09:00:00+00:00",
+        "2026-09-12T09:00:00+00:00",
+        "2026-09-14T09:00:00+00:00",
+        "2026-09-16T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_weekly_for_10",
+      "source": "rfc-5545",
+      "title": "Weekly for 10 occurrences",
+      "description": "RFC 5545 §3.8.5.3",
+      "dtstart_utc": "2026-09-02T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;COUNT=10",
+      "expected_first_occurrences": [
+        "2026-09-02T09:00:00+00:00",
+        "2026-09-09T09:00:00+00:00",
+        "2026-09-16T09:00:00+00:00",
+        "2026-09-23T09:00:00+00:00",
+        "2026-09-30T09:00:00+00:00",
+        "2026-10-07T09:00:00+00:00",
+        "2026-10-14T09:00:00+00:00",
+        "2026-10-21T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_weekly_tu_th",
+      "source": "rfc-5545",
+      "title": "Weekly on Tue + Thu for 5 weeks",
+      "description": "RFC 5545 §3.8.5.3",
+      "dtstart_utc": "2026-09-01T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;UNTIL=20261007T000000Z;WKST=SU;BYDAY=TU,TH",
+      "expected_first_occurrences": [
+        "2026-09-01T09:00:00+00:00",
+        "2026-09-03T09:00:00+00:00",
+        "2026-09-08T09:00:00+00:00",
+        "2026-09-10T09:00:00+00:00",
+        "2026-09-15T09:00:00+00:00",
+        "2026-09-17T09:00:00+00:00",
+        "2026-09-22T09:00:00+00:00",
+        "2026-09-24T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_first_friday",
+      "source": "rfc-5545",
+      "title": "Monthly 1st Friday for 10",
+      "description": "RFC 5545 §3.8.5.3 - positional BYDAY",
+      "dtstart_utc": "2026-09-04T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;COUNT=10;BYDAY=1FR",
+      "expected_first_occurrences": [
+        "2026-09-04T09:00:00+00:00",
+        "2026-10-02T09:00:00+00:00",
+        "2026-11-06T09:00:00+00:00",
+        "2026-12-04T09:00:00+00:00",
+        "2027-01-01T09:00:00+00:00",
+        "2027-02-05T09:00:00+00:00",
+        "2027-03-05T09:00:00+00:00",
+        "2027-04-02T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_last_friday",
+      "source": "rfc-5545",
+      "title": "Monthly last Friday for 10",
+      "description": "RFC 5545 - negative positional",
+      "dtstart_utc": "2026-09-25T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;COUNT=10;BYDAY=-1FR",
+      "expected_first_occurrences": [
+        "2026-09-25T09:00:00+00:00",
+        "2026-10-30T09:00:00+00:00",
+        "2026-11-27T09:00:00+00:00",
+        "2026-12-25T09:00:00+00:00",
+        "2027-01-29T09:00:00+00:00",
+        "2027-02-26T09:00:00+00:00",
+        "2027-03-26T09:00:00+00:00",
+        "2027-04-30T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_2ndlast_monday",
+      "source": "rfc-5545",
+      "title": "Monthly 2nd-to-last Monday",
+      "description": "RFC 5545 - negative positional",
+      "dtstart_utc": "2026-09-21T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;COUNT=6;BYDAY=-2MO",
+      "expected_first_occurrences": [
+        "2026-09-21T09:00:00+00:00",
+        "2026-10-19T09:00:00+00:00",
+        "2026-11-23T09:00:00+00:00",
+        "2026-12-21T09:00:00+00:00",
+        "2027-01-18T09:00:00+00:00",
+        "2027-02-15T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_quarterly_1st",
+      "source": "rfc-5545",
+      "title": "Every 3 months on the 1st",
+      "description": "RFC 5545 - INTERVAL=3 monthly",
+      "dtstart_utc": "2026-09-01T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;INTERVAL=3;COUNT=10;BYMONTHDAY=1",
+      "expected_first_occurrences": [
+        "2026-09-01T09:00:00+00:00",
+        "2026-12-01T09:00:00+00:00",
+        "2027-03-01T09:00:00+00:00",
+        "2027-06-01T09:00:00+00:00",
+        "2027-09-01T09:00:00+00:00",
+        "2027-12-01T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_yearly_jun_jul",
+      "source": "rfc-5545",
+      "title": "Yearly in June and July for 10",
+      "description": "RFC 5545 - BYMONTH",
+      "dtstart_utc": "2026-06-10T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=YEARLY;COUNT=10;BYMONTH=6,7",
+      "expected_first_occurrences": [
+        "2026-06-10T09:00:00+00:00",
+        "2026-07-10T09:00:00+00:00",
+        "2027-06-10T09:00:00+00:00",
+        "2027-07-10T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_election_day",
+      "source": "rfc-5545",
+      "title": "Every 4 years on US election Tuesday",
+      "description": "RFC 5545 - BYMONTH+BYDAY+BYMONTHDAY",
+      "dtstart_utc": "2026-11-03T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=YEARLY;INTERVAL=4;BYMONTH=11;BYDAY=TU;BYMONTHDAY=2,3,4,5,6,7,8",
+      "expected_first_occurrences": [
+        "2026-11-03T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_bysetpos_3rd",
+      "source": "rfc-5545",
+      "title": "3rd Tue/Wed/Thu of the month",
+      "description": "RFC 5545 §3.8.5.3 - BYSETPOS",
+      "dtstart_utc": "2026-09-03T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;COUNT=3;BYDAY=TU,WE,TH;BYSETPOS=3",
+      "expected_first_occurrences": [
+        "2026-09-03T09:00:00+00:00",
+        "2026-10-07T09:00:00+00:00",
+        "2026-11-05T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "rfc_last_workday",
+      "source": "rfc-5545",
+      "title": "Last workday of the month",
+      "description": "RFC 5545 - BYSETPOS=-1 (hardest case)",
+      "dtstart_utc": "2026-09-30T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1;COUNT=6",
+      "expected_first_occurrences": [
+        "2026-09-30T09:00:00+00:00",
+        "2026-10-30T09:00:00+00:00",
+        "2026-11-30T09:00:00+00:00",
+        "2026-12-31T09:00:00+00:00",
+        "2027-01-29T09:00:00+00:00",
+        "2027-02-26T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "gcal_weekly_default",
+      "source": "gcal-or-apple",
+      "title": "GCal: Wöchentlich (Default Mo)",
+      "description": "Default when user picks 'weekly' in GCal UI",
+      "dtstart_utc": "2026-09-07T07:00:00+00:00",
+      "duration_minutes": 30,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;BYDAY=MO",
+      "expected_first_occurrences": [
+        "2026-09-07T07:00:00+00:00",
+        "2026-09-14T07:00:00+00:00",
+        "2026-09-21T07:00:00+00:00",
+        "2026-09-28T07:00:00+00:00",
+        "2026-10-05T07:00:00+00:00",
+        "2026-10-12T07:00:00+00:00",
+        "2026-10-19T07:00:00+00:00",
+        "2026-10-26T07:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "gcal_biweekly_fr",
+      "source": "gcal-or-apple",
+      "title": "GCal: Alle 2 Wochen am Freitag",
+      "description": "Iris's 'Gelbe Tonne' bi-weekly pattern in canonical GCal form",
+      "dtstart_utc": "2026-09-04T07:00:00+00:00",
+      "duration_minutes": 30,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=FR",
+      "expected_first_occurrences": [
+        "2026-09-04T07:00:00+00:00",
+        "2026-09-18T07:00:00+00:00",
+        "2026-10-02T07:00:00+00:00",
+        "2026-10-16T07:00:00+00:00",
+        "2026-10-30T07:00:00+00:00",
+        "2026-11-13T07:00:00+00:00",
+        "2026-11-27T07:00:00+00:00",
+        "2026-12-11T07:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "gcal_weekdays",
+      "source": "gcal-or-apple",
+      "title": "GCal: Jeden Wochentag (Mo-Fr)",
+      "description": "User picks 'every weekday'",
+      "dtstart_utc": "2026-09-07T09:00:00+00:00",
+      "duration_minutes": 30,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+      "expected_first_occurrences": [
+        "2026-09-07T09:00:00+00:00",
+        "2026-09-08T09:00:00+00:00",
+        "2026-09-09T09:00:00+00:00",
+        "2026-09-10T09:00:00+00:00",
+        "2026-09-11T09:00:00+00:00",
+        "2026-09-14T09:00:00+00:00",
+        "2026-09-15T09:00:00+00:00",
+        "2026-09-16T09:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "gcal_monthly_2nd_thu",
+      "source": "gcal-or-apple",
+      "title": "GCal: Monatlich am 2. Donnerstag",
+      "description": "Common GCal pattern",
+      "dtstart_utc": "2026-09-10T18:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;BYDAY=2TH",
+      "expected_first_occurrences": [
+        "2026-09-10T18:00:00+00:00",
+        "2026-10-08T18:00:00+00:00",
+        "2026-11-12T18:00:00+00:00",
+        "2026-12-10T18:00:00+00:00",
+        "2027-01-14T18:00:00+00:00",
+        "2027-02-11T18:00:00+00:00",
+        "2027-03-11T18:00:00+00:00",
+        "2027-04-08T18:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "apple_yearly",
+      "source": "gcal-or-apple",
+      "title": "Apple: Jährlich (birthday-style, all-day)",
+      "description": "",
+      "dtstart_utc": "2026-07-15T00:00:00+00:00",
+      "duration_minutes": 1440,
+      "all_day": true,
+      "rrule": "FREQ=YEARLY",
+      "expected_first_occurrences": [
+        "2026-07-15T00:00:00+00:00",
+        "2027-07-15T00:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "apple_count_5",
+      "source": "gcal-or-apple",
+      "title": "Apple: Begrenzt auf 5 Wiederholungen",
+      "description": "",
+      "dtstart_utc": "2026-09-02T15:00:00+00:00",
+      "duration_minutes": 45,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;COUNT=5;BYDAY=WE",
+      "expected_first_occurrences": [
+        "2026-09-02T15:00:00+00:00",
+        "2026-09-09T15:00:00+00:00",
+        "2026-09-16T15:00:00+00:00",
+        "2026-09-23T15:00:00+00:00",
+        "2026-09-30T15:00:00+00:00"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "apple_floating_until",
+      "source": "gcal-or-apple",
+      "title": "Apple: UNTIL ohne Z für all-day events",
+      "description": "PARSER EDGE CASE: dateutil rejects this. Real Apple Calendar emits this for all-day recurring events.",
+      "dtstart_utc": "2026-05-04T00:00:00+00:00",
+      "duration_minutes": 1440,
+      "all_day": true,
+      "rrule": "FREQ=WEEKLY;UNTIL=20261001;BYDAY=MO",
+      "expected_first_occurrences": {
+        "_parser_note": "dateutil rejected: ValueError: RRULE UNTIL values must be specified in UTC when DTSTART is timezone-aware"
+      },
+      "notes": ""
+    },
+    {
+      "id": "edge_dst_boundary",
+      "source": "edge-case",
+      "title": "Wöchentlich über DST-Grenze (CET → CEST)",
+      "description": "Validates: wall-clock time is preserved when crossing DST in March / October",
+      "dtstart_utc": "2026-03-15T07:00:00+00:00",
+      "duration_minutes": 30,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;COUNT=6;BYDAY=SU",
+      "expected_first_occurrences": [
+        "2026-03-15T07:00:00+00:00",
+        "2026-03-22T07:00:00+00:00",
+        "2026-03-29T07:00:00+00:00",
+        "2026-04-05T07:00:00+00:00",
+        "2026-04-12T07:00:00+00:00",
+        "2026-04-19T07:00:00+00:00"
+      ],
+      "notes": "documented edge case — parser must handle"
+    },
+    {
+      "id": "edge_leap_feb29",
+      "source": "edge-case",
+      "title": "Jährlich am 29. Februar",
+      "description": "Validates: BYMONTHDAY=29 in non-leap years (parser must skip or shift correctly)",
+      "dtstart_utc": "2024-02-29T12:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29;COUNT=4",
+      "expected_first_occurrences": [
+        "2024-02-29T12:00:00+00:00"
+      ],
+      "notes": "documented edge case — parser must handle"
+    },
+    {
+      "id": "edge_wkst_su",
+      "source": "edge-case",
+      "title": "WKST=SU verändert Wochengrenze für INTERVAL=2",
+      "description": "Validates: WKST is respected for biweekly with multi-day BYDAY",
+      "dtstart_utc": "2026-09-07T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;WKST=SU;COUNT=6",
+      "expected_first_occurrences": [
+        "2026-09-07T09:00:00+00:00",
+        "2026-09-20T09:00:00+00:00",
+        "2026-09-21T09:00:00+00:00",
+        "2026-10-04T09:00:00+00:00",
+        "2026-10-05T09:00:00+00:00",
+        "2026-10-18T09:00:00+00:00"
+      ],
+      "notes": "documented edge case — parser must handle"
+    },
+    {
+      "id": "edge_31st_of_month",
+      "source": "edge-case",
+      "title": "Monatlich am 31. (parser muss February/short months skippen)",
+      "description": "Validates: BYMONTHDAY=31 only fires when day exists; Feb/Apr/Jun/Sep/Nov skipped",
+      "dtstart_utc": "2026-01-31T12:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=MONTHLY;BYMONTHDAY=31;COUNT=8",
+      "expected_first_occurrences": [
+        "2026-01-31T12:00:00+00:00",
+        "2026-03-31T12:00:00+00:00",
+        "2026-05-31T12:00:00+00:00",
+        "2026-07-31T12:00:00+00:00",
+        "2026-08-31T12:00:00+00:00",
+        "2026-10-31T12:00:00+00:00",
+        "2026-12-31T12:00:00+00:00",
+        "2027-01-31T12:00:00+00:00"
+      ],
+      "notes": "documented edge case — parser must handle"
+    },
+    {
+      "id": "edge_long_until_utc",
+      "source": "edge-case",
+      "title": "UNTIL weit in der Zukunft",
+      "description": "Validates: parser handles distant-future UNTIL correctly without overflow",
+      "dtstart_utc": "2026-09-01T09:00:00+00:00",
+      "duration_minutes": 60,
+      "all_day": false,
+      "rrule": "FREQ=YEARLY;UNTIL=20991231T235959Z",
+      "expected_first_occurrences": [
+        "2026-09-01T09:00:00+00:00",
+        "2027-09-01T09:00:00+00:00"
+      ],
+      "notes": "documented edge case — parser must handle"
+    }
+  ]
+}

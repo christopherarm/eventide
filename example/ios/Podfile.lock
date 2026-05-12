@@ -1,0 +1,22 @@
+PODS:
+  - eventide (1.0.0):
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - eventide (from `.symlinks/plugins/eventide/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  eventide:
+    :path: ".symlinks/plugins/eventide/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  eventide: f55e9e0ac5dc1ea4a1ba4d2e6974316a695a1b8a
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+
+PODFILE CHECKSUM: 786439ec1bab34a52134aa2870faed7aeb7ad66d
+
+COCOAPODS: 1.16.2
