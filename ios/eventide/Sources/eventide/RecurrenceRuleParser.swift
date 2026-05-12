@@ -278,8 +278,23 @@ public enum RecurrenceRuleParser {
         "TH": .thursday, "FR": .friday, "SA": .saturday,
     ]
 
-    /// Parses `BYDAY=MO,WE,FR`. Rejects positional form like `1MO`, `-1FR`
-    /// (Phase 2). EventKit's weekNumber=0 means "any occurrence of this weekday".
+    /// Matches a single BYDAY token per RFC 5545 §3.3.10:
+    ///   `weekdaynum = [[plus / minus] ordwk] weekday`
+    ///   `ordwk = 1*2DIGIT`
+    /// Capture groups: (1) optional signed week offset, (2) two-letter weekday.
+    /// Examples: "MO" → (nil, "MO"); "1FR" → ("1", "FR"); "-2MO" → ("-2", "MO").
+    private static let byDayTokenPattern: NSRegularExpression = {
+        do {
+            return try NSRegularExpression(
+                pattern: "^([+-]?\\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$"
+            )
+        } catch {
+            fatalError("byDayTokenPattern failed to compile: \(error)")
+        }
+    }()
+
+    /// Parses `BYDAY=MO,WE,FR` (Phase 1) or `BYDAY=1FR,-1MO` (Phase 2 positional).
+    /// EventKit's weekNumber=0 means "any occurrence of this weekday".
     private static func parseByDay(_ s: String?) throws -> [EKRecurrenceDayOfWeek]? {
         guard let s = s, !s.isEmpty else { return nil }
         var result: [EKRecurrenceDayOfWeek] = []
