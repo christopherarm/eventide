@@ -5,16 +5,17 @@
 //  Created by CHOUPAULT Alexis on 23/01/2025.
 //
 
+import EventKit
 import Foundation
 import UIKit
 
 protocol EasyEventStoreProtocol {
     func createCalendar(title: String, color: UIColor, account: Account?) throws -> Calendar
-    
+
     func retrieveCalendars(onlyWritable: Bool, from account: Account?) -> [Calendar]
-    
+
     func retrieveAccounts() -> [Account]
-    
+
     func deleteCalendar(calendarId: String) throws -> Void
 
     func createEvent(calendarId: String, title: String, startDate: Date, endDate: Date, isAllDay: Bool, description: String?, url: String?, location: String?, timeIntervals: [TimeInterval]?, recurrenceRule: String?, excludedDates: [Int64]?) throws -> Event
@@ -36,6 +37,22 @@ protocol EasyEventStoreProtocol {
     func retrieveEvents(calendarId: String, startDate: Date, endDate: Date, expandRecurring: Bool) throws -> [Event]
 
     func deleteEvent(eventId: String) throws -> Void
+
+    func updateEvent(
+        eventId: String,
+        span: EKSpan,
+        occurrenceTime: Date?,
+        title: String?,
+        startDate: Date?,
+        endDate: Date?,
+        isAllDay: Bool?,
+        description: String?,
+        url: String?,
+        location: String?,
+        timeIntervals: [TimeInterval]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?
+    ) throws -> Event
 
     func createReminder(timeInterval: TimeInterval, eventId: String) throws -> Event
 

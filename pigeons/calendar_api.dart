@@ -72,6 +72,38 @@ abstract class CalendarApi {
     List<int>? excludedDates,
   });
 
+  /// Updates an existing event. All optional field params follow
+  /// null-means-unchanged semantics; pass `""` to clear a string field.
+  ///
+  /// `span` controls how the change applies to recurring events:
+  /// - `UpdateSpan.thisEvent`: modify only the occurrence at
+  ///   `occurrenceTimeUtcMs`. On iOS this uses `EKSpan.thisEvent`;
+  ///   on Android it inserts a detached child row.
+  /// - `UpdateSpan.thisAndFuture`: terminate the master with UNTIL =
+  ///   `occurrenceTimeUtcMs - 1ms` and write a new master at the
+  ///   occurrence. Requires `occurrenceTimeUtcMs`.
+  /// - `UpdateSpan.allEvents`: overwrite the master in-place; affects
+  ///   every occurrence.
+  ///
+  /// `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
+  /// ignored for `allEvents`.
+  @async
+  Event updateEvent({
+    required String eventId,
+    required UpdateSpan span,
+    required int? occurrenceTimeUtcMs,
+    required String? title,
+    required int? startDate,
+    required int? endDate,
+    required bool? isAllDay,
+    required String? description,
+    required String? url,
+    required String? location,
+    required List<int>? reminders,
+    required String? recurrenceRule,
+    required List<int>? excludedDates,
+  });
+
   @async
   List<Event> retrieveEvents({
     required String calendarId,
@@ -181,4 +213,18 @@ final class Attendee {
     required this.type,
     required this.status,
   });
+}
+
+/// Scope of an [CalendarApi.updateEvent] call.
+enum UpdateSpan {
+  /// Modify only the single occurrence at `occurrenceTimeUtcMs`.
+  /// On iOS uses `EKSpan.thisEvent`; on Android inserts a detached row.
+  thisEvent,
+
+  /// Terminate the master series at `occurrenceTimeUtcMs` (exclusive) and
+  /// write a new master starting at that time with the modified fields.
+  thisAndFuture,
+
+  /// Overwrite the master event in place; affects every occurrence.
+  allEvents,
 }

@@ -5,6 +5,7 @@
 //  Created by CHOUPAULT Alexis on 23/01/2025.
 //
 
+import EventKit
 import UIKit
 @testable import eventide
 
@@ -133,6 +134,64 @@ class MockEasyEventStore: EasyEventStoreProtocol {
             .map { $0.toEvent() }
     }
     
+    func updateEvent(
+        eventId: String,
+        span: EKSpan,
+        occurrenceTime: Date?,
+        title: String?,
+        startDate: Date?,
+        endDate: Date?,
+        isAllDay: Bool?,
+        description: String?,
+        url: String?,
+        location: String?,
+        timeIntervals: [TimeInterval]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?
+    ) throws -> Event {
+        // Mock: in-place mutate the MockEvent (allEvents span equivalent).
+        // Span / occurrenceTime are honored only as far as needed to satisfy
+        // the contract; production span semantics live in EasyEventStore.
+        _ = span
+        _ = occurrenceTime
+        _ = recurrenceRule
+        _ = excludedDates
+        guard let mockEvent = findEvent(eventId: eventId) else {
+            throw PigeonError(
+                code: "NOT_FOUND",
+                message: "Event not found",
+                details: "The provided event.id is certainly incorrect"
+            )
+        }
+        guard let calendar = calendars.first(where: { $0.id == mockEvent.calendarId }),
+              calendar.isWritable else {
+            throw PigeonError(
+                code: "NOT_EDITABLE",
+                message: "Calendar not editable",
+                details: nil
+            )
+        }
+        // Apply mutations: replace the existing MockEvent with a new one
+        // since MockEvent's mutable fields are limited.
+        let updated = MockEvent(
+            id: mockEvent.id,
+            title: title ?? mockEvent.title,
+            startDate: startDate ?? mockEvent.startDate,
+            endDate: endDate ?? mockEvent.endDate,
+            calendarId: mockEvent.calendarId,
+            isAllDay: isAllDay ?? mockEvent.isAllDay,
+            description: description.flatMap { $0.isEmpty ? nil : $0 } ?? mockEvent.description,
+            url: url.flatMap { $0.isEmpty ? nil : $0 } ?? mockEvent.url,
+            location: location.flatMap { $0.isEmpty ? nil : $0 } ?? mockEvent.location,
+            reminders: timeIntervals ?? mockEvent.reminders,
+            attendees: mockEvent.attendees
+        )
+        if let idx = calendar.events.firstIndex(where: { $0.id == eventId }) {
+            calendar.events[idx] = updated
+        }
+        return updated.toEvent()
+    }
+
     func deleteEvent(eventId: String) throws {
         guard let mockEvent = findEvent(eventId: eventId) else {
             throw PigeonError(

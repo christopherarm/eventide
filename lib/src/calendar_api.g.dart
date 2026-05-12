@@ -97,6 +97,18 @@ int _deepHash(Object? value) {
 }
 
 
+/// Scope of an [CalendarApi.updateEvent] call.
+enum UpdateSpan {
+  /// Modify only the single occurrence at `occurrenceTimeUtcMs`.
+  /// On iOS uses `EKSpan.thisEvent`; on Android inserts a detached row.
+  thisEvent,
+  /// Terminate the master series at `occurrenceTimeUtcMs` (exclusive) and
+  /// write a new master starting at that time with the modified fields.
+  thisAndFuture,
+  /// Overwrite the master event in place; affects every occurrence.
+  allEvents,
+}
+
 class Calendar {
   Calendar({
     required this.id,
@@ -375,17 +387,20 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is Calendar) {
+    }    else if (value is UpdateSpan) {
       buffer.putUint8(129);
-      writeValue(buffer, value.encode());
-    }    else if (value is Event) {
+      writeValue(buffer, value.index);
+    }    else if (value is Calendar) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    }    else if (value is Account) {
+    }    else if (value is Event) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    }    else if (value is Attendee) {
+    }    else if (value is Account) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    }    else if (value is Attendee) {
+      buffer.putUint8(133);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -396,12 +411,15 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129:
-        return Calendar.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : UpdateSpan.values[value];
       case 130:
-        return Event.decode(readValue(buffer)!);
+        return Calendar.decode(readValue(buffer)!);
       case 131:
-        return Account.decode(readValue(buffer)!);
+        return Event.decode(readValue(buffer)!);
       case 132:
+        return Account.decode(readValue(buffer)!);
+      case 133:
         return Attendee.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -550,6 +568,40 @@ class CalendarApi {
         isNullValid: true,
     )
     ;
+  }
+
+  /// Updates an existing event. All optional field params follow
+  /// null-means-unchanged semantics; pass `""` to clear a string field.
+  ///
+  /// `span` controls how the change applies to recurring events:
+  /// - `UpdateSpan.thisEvent`: modify only the occurrence at
+  ///   `occurrenceTimeUtcMs`. On iOS this uses `EKSpan.thisEvent`;
+  ///   on Android it inserts a detached child row.
+  /// - `UpdateSpan.thisAndFuture`: terminate the master with UNTIL =
+  ///   `occurrenceTimeUtcMs - 1ms` and write a new master at the
+  ///   occurrence. Requires `occurrenceTimeUtcMs`.
+  /// - `UpdateSpan.allEvents`: overwrite the master in-place; affects
+  ///   every occurrence.
+  ///
+  /// `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
+  /// ignored for `allEvents`.
+  Future<Event> updateEvent({required String eventId, required UpdateSpan span, required int? occurrenceTimeUtcMs, required String? title, required int? startDate, required int? endDate, required bool? isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, }) async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.eventide.CalendarApi.updateEvent$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[eventId, span, occurrenceTimeUtcMs, title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: false,
+    )
+    ;
+    return pigeonVar_replyValue! as Event;
   }
 
   Future<List<Event>> retrieveEvents({required String calendarId, required int startDate, required int endDate, required bool expandRecurring, }) async {

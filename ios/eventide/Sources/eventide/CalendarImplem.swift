@@ -5,6 +5,7 @@
 //  Created by CHOUPAULT Alexis on 31/12/2024.
 //
 
+import EventKit
 import Foundation
 import UIKit
 
@@ -253,6 +254,85 @@ class CalendarImplem: CalendarApi {
         }
     }
     
+    func updateEvent(
+        eventId: String,
+        span: UpdateSpan,
+        occurrenceTimeUtcMs: Int64?,
+        title: String?,
+        startDate: Int64?,
+        endDate: Int64?,
+        isAllDay: Bool?,
+        description: String?,
+        url: String?,
+        location: String?,
+        reminders: [Int64]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?,
+        completion: @escaping (Result<Event, any Error>) -> Void
+    ) {
+        permissionHandler.checkCalendarAccessThenExecute(.fullAccess) { [self] in
+            do {
+                // Map Pigeon UpdateSpan -> EKSpan. `allEvents` operates on the
+                // master directly with `.thisEvent` (the master IS the rule);
+                // the other two operate on a specific occurrence found by time.
+                let ekSpan: EKSpan
+                let needsOccurrence: Bool
+                switch span {
+                case .thisEvent:
+                    ekSpan = .thisEvent
+                    needsOccurrence = true
+                case .thisAndFuture:
+                    ekSpan = .futureEvents
+                    needsOccurrence = true
+                case .allEvents:
+                    // Saving the master with `.futureEvents` propagates the
+                    // change to every occurrence (the master IS the rule);
+                    // `.thisEvent` on a master quietly strips the
+                    // recurrenceRule, detaching it into a one-off event on
+                    // iOS 26.
+                    ekSpan = .futureEvents
+                    needsOccurrence = false
+                }
+                if needsOccurrence && occurrenceTimeUtcMs == nil {
+                    throw PigeonError(
+                        code: "INVALID_ARGUMENT",
+                        message: "occurrenceTimeUtcMs is required for thisEvent / thisAndFuture spans",
+                        details: "Pass the original occurrence time in UTC ms-since-epoch."
+                    )
+                }
+                let occurrenceTime: Date? = (needsOccurrence && occurrenceTimeUtcMs != nil)
+                    ? Date(from: occurrenceTimeUtcMs!)
+                    : nil
+                let updated = try easyEventStore.updateEvent(
+                    eventId: eventId,
+                    span: ekSpan,
+                    occurrenceTime: occurrenceTime,
+                    title: title,
+                    startDate: startDate.map { Date(from: $0) },
+                    endDate: endDate.map { Date(from: $0) },
+                    isAllDay: isAllDay,
+                    description: description,
+                    url: url,
+                    location: location,
+                    timeIntervals: reminders?.compactMap { TimeInterval(-$0) },
+                    recurrenceRule: recurrenceRule,
+                    excludedDates: excludedDates
+                )
+                completion(.success(updated))
+            } catch {
+                completion(.failure(error))
+            }
+        } onPermissionRefused: {
+            completion(.failure(PigeonError(
+                code: "ACCESS_REFUSED",
+                message: "Calendar access has been refused or has not been given yet",
+                details: nil
+            )))
+        } onPermissionError: { error in
+            completion(.failure(error))
+        }
+    }
+
     func deleteEvent(withId eventId: String, completion: @escaping (Result<Void, any Error>) -> Void) {
         permissionHandler.checkCalendarAccessThenExecute(.fullAccess) { [self] in
             do {

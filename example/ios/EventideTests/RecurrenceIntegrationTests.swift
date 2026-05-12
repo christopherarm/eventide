@@ -175,6 +175,177 @@ final class RecurrenceIntegrationTests: XCTestCase {
                        "Round-trip through EventKit lost or transformed recurrence info")
     }
 
+    // MARK: - Phase 2D: updateEvent
+
+    func test_updateEvent_allEvents_overwritesMasterTitle() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "Original",
+            startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600),
+            isAllDay: false,
+            description: "original notes",
+            url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;COUNT=4;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        let updated = try easyStore.updateEvent(
+            eventId: master.id, span: .thisEvent, occurrenceTime: nil,
+            title: "Renamed", startDate: nil, endDate: nil, isAllDay: nil,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        XCTAssertEqual(updated.title, "Renamed")
+        XCTAssertEqual(updated.description, "original notes",
+                       "null description should leave the existing value unchanged")
+        XCTAssertEqual(updated.recurrenceRule, "FREQ=WEEKLY;COUNT=4;BYDAY=MO")
+    }
+
+    func test_updateEvent_allEvents_changesRecurrenceRule() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "Series", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        let updated = try easyStore.updateEvent(
+            eventId: master.id, span: .thisEvent, occurrenceTime: nil,
+            title: nil, startDate: nil, endDate: nil, isAllDay: nil,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;BYDAY=WE",
+            excludedDates: nil
+        )
+
+        XCTAssertEqual(updated.recurrenceRule, "FREQ=WEEKLY;BYDAY=WE")
+    }
+
+    func test_updateEvent_clearsDescription_withEmptyString() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "T", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: "to be cleared",
+            url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        let updated = try easyStore.updateEvent(
+            eventId: master.id, span: .thisEvent, occurrenceTime: nil,
+            title: nil, startDate: nil, endDate: nil, isAllDay: nil,
+            description: "", url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        XCTAssertNil(updated.description, "empty string should clear notes")
+    }
+
+    func test_updateEvent_thisEvent_createsDetachedOccurrence() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")  // Monday
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "Weekly Standup", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;COUNT=5;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        // Move the third occurrence (2026-09-21) to a different time.
+        let thirdOccurrence = iso("2026-09-21T09:00:00Z")
+        let newStart = iso("2026-09-21T11:00:00Z")
+        let updated = try easyStore.updateEvent(
+            eventId: master.id, span: .thisEvent, occurrenceTime: thirdOccurrence,
+            title: "Standup (moved)",
+            startDate: newStart,
+            endDate: newStart.addingTimeInterval(3600),
+            isAllDay: nil,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        XCTAssertEqual(updated.title, "Standup (moved)")
+
+        // Confirm the master title remains "Weekly Standup" by reading the
+        // master back via the EKEventStore directly.
+        let masterEK = store.event(withIdentifier: master.id)
+        XCTAssertEqual(masterEK?.title, "Weekly Standup",
+                       ".thisEvent span must not mutate the master")
+    }
+
+    func test_updateEvent_thisAndFuture_terminatesAndContinues() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "Workout", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;COUNT=10;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        let splitAt = iso("2026-09-21T09:00:00Z")
+        let updated = try easyStore.updateEvent(
+            eventId: master.id, span: .futureEvents, occurrenceTime: splitAt,
+            title: "Cross-Training",
+            startDate: nil, endDate: nil, isAllDay: nil,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        XCTAssertEqual(updated.title, "Cross-Training",
+                       ".futureEvents span returns the split-off master")
+    }
+
+    func test_updateEvent_throwsWhenOccurrenceMissing() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "T", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;COUNT=2;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        // Pick a date far outside any occurrence.
+        let bogus = iso("2030-01-01T09:00:00Z")
+        XCTAssertThrowsError(
+            try easyStore.updateEvent(
+                eventId: master.id, span: .thisEvent, occurrenceTime: bogus,
+                title: "x", startDate: nil, endDate: nil, isAllDay: nil,
+                description: nil, url: nil, location: nil,
+                timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+            )
+        ) { error in
+            guard let pigeon = error as? PigeonError else {
+                XCTFail("expected PigeonError, got \(type(of: error))")
+                return
+            }
+            XCTAssertEqual(pigeon.code, "NOT_FOUND",
+                           "expected NOT_FOUND, got code=\(pigeon.code)")
+        }
+    }
+
     // MARK: - Helpers
 
     private func iso(_ s: String) -> Date {

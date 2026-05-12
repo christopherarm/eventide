@@ -174,6 +174,18 @@ func deepHashCalendarApi(value: Any?, hasher: inout Hasher) {
 }
 
 
+/// Scope of an [CalendarApi.updateEvent] call.
+enum UpdateSpan: Int {
+  /// Modify only the single occurrence at `occurrenceTimeUtcMs`.
+  /// On iOS uses `EKSpan.thisEvent`; on Android inserts a detached row.
+  case thisEvent = 0
+  /// Terminate the master series at `occurrenceTimeUtcMs` (exclusive) and
+  /// write a new master starting at that time with the modified fields.
+  case thisAndFuture = 1
+  /// Overwrite the master event in place; affects every occurrence.
+  case allEvents = 2
+}
+
 /// Generated class from Pigeon that represents data sent in messages.
 struct Calendar: Hashable {
   var id: String
@@ -412,12 +424,18 @@ private class CalendarApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
-      return Calendar.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return UpdateSpan(rawValue: enumResultAsInt)
+      }
+      return nil
     case 130:
-      return Event.fromList(self.readValue() as! [Any?])
+      return Calendar.fromList(self.readValue() as! [Any?])
     case 131:
-      return Account.fromList(self.readValue() as! [Any?])
+      return Event.fromList(self.readValue() as! [Any?])
     case 132:
+      return Account.fromList(self.readValue() as! [Any?])
+    case 133:
       return Attendee.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -427,17 +445,20 @@ private class CalendarApiPigeonCodecReader: FlutterStandardReader {
 
 private class CalendarApiPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? Calendar {
+    if let value = value as? UpdateSpan {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? Event {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? Calendar {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? Account {
+    } else if let value = value as? Event {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? Attendee {
+    } else if let value = value as? Account {
       super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? Attendee {
+      super.writeByte(133)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -469,6 +490,22 @@ protocol CalendarApi {
   func createEvent(calendarId: String, title: String, startDate: Int64, endDate: Int64, isAllDay: Bool, description: String?, url: String?, location: String?, reminders: [Int64]?, recurrenceRule: String?, excludedDates: [Int64]?, completion: @escaping (Result<Event, Error>) -> Void)
   func createEventInDefaultCalendar(title: String, startDate: Int64, endDate: Int64, isAllDay: Bool, description: String?, url: String?, location: String?, reminders: [Int64]?, recurrenceRule: String?, excludedDates: [Int64]?, completion: @escaping (Result<Void, Error>) -> Void)
   func createEventThroughNativePlatform(title: String?, startDate: Int64?, endDate: Int64?, isAllDay: Bool?, description: String?, url: String?, location: String?, reminders: [Int64]?, recurrenceRule: String?, excludedDates: [Int64]?, completion: @escaping (Result<Void, Error>) -> Void)
+  /// Updates an existing event. All optional field params follow
+  /// null-means-unchanged semantics; pass `""` to clear a string field.
+  ///
+  /// `span` controls how the change applies to recurring events:
+  /// - `UpdateSpan.thisEvent`: modify only the occurrence at
+  ///   `occurrenceTimeUtcMs`. On iOS this uses `EKSpan.thisEvent`;
+  ///   on Android it inserts a detached child row.
+  /// - `UpdateSpan.thisAndFuture`: terminate the master with UNTIL =
+  ///   `occurrenceTimeUtcMs - 1ms` and write a new master at the
+  ///   occurrence. Requires `occurrenceTimeUtcMs`.
+  /// - `UpdateSpan.allEvents`: overwrite the master in-place; affects
+  ///   every occurrence.
+  ///
+  /// `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
+  /// ignored for `allEvents`.
+  func updateEvent(eventId: String, span: UpdateSpan, occurrenceTimeUtcMs: Int64?, title: String?, startDate: Int64?, endDate: Int64?, isAllDay: Bool?, description: String?, url: String?, location: String?, reminders: [Int64]?, recurrenceRule: String?, excludedDates: [Int64]?, completion: @escaping (Result<Event, Error>) -> Void)
   func retrieveEvents(calendarId: String, startDate: Int64, endDate: Int64, expandRecurring: Bool, completion: @escaping (Result<[Event], Error>) -> Void)
   func deleteEvent(withId eventId: String, completion: @escaping (Result<Void, Error>) -> Void)
   func createReminder(_ reminder: Int64, forEventId eventId: String, completion: @escaping (Result<Event, Error>) -> Void)
@@ -630,6 +667,50 @@ class CalendarApiSetup {
       }
     } else {
       createEventThroughNativePlatformChannel.setMessageHandler(nil)
+    }
+    /// Updates an existing event. All optional field params follow
+    /// null-means-unchanged semantics; pass `""` to clear a string field.
+    ///
+    /// `span` controls how the change applies to recurring events:
+    /// - `UpdateSpan.thisEvent`: modify only the occurrence at
+    ///   `occurrenceTimeUtcMs`. On iOS this uses `EKSpan.thisEvent`;
+    ///   on Android it inserts a detached child row.
+    /// - `UpdateSpan.thisAndFuture`: terminate the master with UNTIL =
+    ///   `occurrenceTimeUtcMs - 1ms` and write a new master at the
+    ///   occurrence. Requires `occurrenceTimeUtcMs`.
+    /// - `UpdateSpan.allEvents`: overwrite the master in-place; affects
+    ///   every occurrence.
+    ///
+    /// `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
+    /// ignored for `allEvents`.
+    let updateEventChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eventide.CalendarApi.updateEvent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateEventChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let eventIdArg = args[0] as! String
+        let spanArg = args[1] as! UpdateSpan
+        let occurrenceTimeUtcMsArg: Int64? = nilOrValue(args[2])
+        let titleArg: String? = nilOrValue(args[3])
+        let startDateArg: Int64? = nilOrValue(args[4])
+        let endDateArg: Int64? = nilOrValue(args[5])
+        let isAllDayArg: Bool? = nilOrValue(args[6])
+        let descriptionArg: String? = nilOrValue(args[7])
+        let urlArg: String? = nilOrValue(args[8])
+        let locationArg: String? = nilOrValue(args[9])
+        let remindersArg: [Int64]? = nilOrValue(args[10])
+        let recurrenceRuleArg: String? = nilOrValue(args[11])
+        let excludedDatesArg: [Int64]? = nilOrValue(args[12])
+        api.updateEvent(eventId: eventIdArg, span: spanArg, occurrenceTimeUtcMs: occurrenceTimeUtcMsArg, title: titleArg, startDate: startDateArg, endDate: endDateArg, isAllDay: isAllDayArg, description: descriptionArg, url: urlArg, location: locationArg, reminders: remindersArg, recurrenceRule: recurrenceRuleArg, excludedDates: excludedDatesArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      updateEventChannel.setMessageHandler(nil)
     }
     let retrieveEventsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eventide.CalendarApi.retrieveEvents\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

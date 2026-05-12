@@ -192,6 +192,28 @@ class FlutterError (
   val details: Any? = null
 ) : RuntimeException()
 
+/** Scope of an [CalendarApi.updateEvent] call. */
+enum class UpdateSpan(val raw: Int) {
+  /**
+   * Modify only the single occurrence at `occurrenceTimeUtcMs`.
+   * On iOS uses `EKSpan.thisEvent`; on Android inserts a detached row.
+   */
+  THIS_EVENT(0),
+  /**
+   * Terminate the master series at `occurrenceTimeUtcMs` (exclusive) and
+   * write a new master starting at that time with the modified fields.
+   */
+  THIS_AND_FUTURE(1),
+  /** Overwrite the master event in place; affects every occurrence. */
+  ALL_EVENTS(2);
+
+  companion object {
+    fun ofRaw(raw: Int): UpdateSpan? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 /** Generated class from Pigeon that represents data sent in messages. */
 data class Calendar (
   val id: String,
@@ -419,21 +441,26 @@ private open class CalendarApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          Calendar.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          UpdateSpan.ofRaw(it.toInt())
         }
       }
       130.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          Event.fromList(it)
+          Calendar.fromList(it)
         }
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          Account.fromList(it)
+          Event.fromList(it)
         }
       }
       132.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          Account.fromList(it)
+        }
+      }
+      133.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           Attendee.fromList(it)
         }
@@ -443,20 +470,24 @@ private open class CalendarApiPigeonCodec : StandardMessageCodec() {
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
-      is Calendar -> {
+      is UpdateSpan -> {
         stream.write(129)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is Event -> {
+      is Calendar -> {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is Account -> {
+      is Event -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is Attendee -> {
+      is Account -> {
         stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is Attendee -> {
+        stream.write(133)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -474,6 +505,24 @@ interface CalendarApi {
   fun createEvent(calendarId: String, title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Event>) -> Unit)
   fun createEventInDefaultCalendar(title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Unit>) -> Unit)
   fun createEventThroughNativePlatform(title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Unit>) -> Unit)
+  /**
+   * Updates an existing event. All optional field params follow
+   * null-means-unchanged semantics; pass `""` to clear a string field.
+   *
+   * `span` controls how the change applies to recurring events:
+   * - `UpdateSpan.thisEvent`: modify only the occurrence at
+   *   `occurrenceTimeUtcMs`. On iOS this uses `EKSpan.thisEvent`;
+   *   on Android it inserts a detached child row.
+   * - `UpdateSpan.thisAndFuture`: terminate the master with UNTIL =
+   *   `occurrenceTimeUtcMs - 1ms` and write a new master at the
+   *   occurrence. Requires `occurrenceTimeUtcMs`.
+   * - `UpdateSpan.allEvents`: overwrite the master in-place; affects
+   *   every occurrence.
+   *
+   * `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
+   * ignored for `allEvents`.
+   */
+  fun updateEvent(eventId: String, span: UpdateSpan, occurrenceTimeUtcMs: Long?, title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Event>) -> Unit)
   fun retrieveEvents(calendarId: String, startDate: Long, endDate: Long, expandRecurring: Boolean, callback: (Result<List<Event>>) -> Unit)
   fun deleteEvent(eventId: String, callback: (Result<Unit>) -> Unit)
   fun createReminder(reminder: Long, eventId: String, callback: (Result<Event>) -> Unit)
@@ -649,6 +698,38 @@ interface CalendarApi {
                 reply.reply(CalendarApiPigeonUtils.wrapError(error))
               } else {
                 reply.reply(CalendarApiPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.eventide.CalendarApi.updateEvent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val eventIdArg = args[0] as String
+            val spanArg = args[1] as UpdateSpan
+            val occurrenceTimeUtcMsArg = args[2] as Long?
+            val titleArg = args[3] as String?
+            val startDateArg = args[4] as Long?
+            val endDateArg = args[5] as Long?
+            val isAllDayArg = args[6] as Boolean?
+            val descriptionArg = args[7] as String?
+            val urlArg = args[8] as String?
+            val locationArg = args[9] as String?
+            val remindersArg = args[10] as List<Long>?
+            val recurrenceRuleArg = args[11] as String?
+            val excludedDatesArg = args[12] as List<Long>?
+            api.updateEvent(eventIdArg, spanArg, occurrenceTimeUtcMsArg, titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg) { result: Result<Event> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(CalendarApiPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(CalendarApiPigeonUtils.wrapResult(data))
               }
             }
           }

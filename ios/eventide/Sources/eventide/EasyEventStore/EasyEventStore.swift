@@ -292,6 +292,157 @@ final class EasyEventStore: EasyEventStoreProtocol {
         return deduped.map { $0.toEvent() }
     }
     
+    func updateEvent(
+        eventId: String,
+        span: EKSpan,
+        occurrenceTime: Date?,
+        title: String?,
+        startDate: Date?,
+        endDate: Date?,
+        isAllDay: Bool?,
+        description: String?,
+        url: String?,
+        location: String?,
+        timeIntervals: [TimeInterval]?,
+        recurrenceRule: String?,
+        excludedDates: [Int64]?
+    ) throws -> Event {
+        // For `.thisEvent` and `.futureEvents` spans on recurring events we
+        // need the specific occurrence handle (not the master). `allEvents`
+        // (mapped to `.thisEvent` on the master) works directly on the master
+        // because the master IS the source-of-truth for the series.
+        let ekEvent: EKEvent
+        if let occurrenceTime = occurrenceTime {
+            guard let found = findOccurrence(eventId: eventId, occurrenceTime: occurrenceTime) else {
+                throw PigeonError(
+                    code: "NOT_FOUND",
+                    message: "Occurrence not found",
+                    details: "No occurrence at \(occurrenceTime) for series \(eventId)"
+                )
+            }
+            ekEvent = found
+        } else {
+            guard let masterEvent = retrieveMasterWithRecurrence(eventId: eventId) else {
+                throw PigeonError(
+                    code: "NOT_FOUND",
+                    message: "Event not found",
+                    details: "The provided event.id is certainly incorrect"
+                )
+            }
+            ekEvent = masterEvent
+        }
+
+        guard ekEvent.calendar.allowsContentModifications else {
+            throw PigeonError(
+                code: "NOT_EDITABLE",
+                message: "Calendar not editable",
+                details: "The calendar related to this event does not allow content modifications"
+            )
+        }
+
+        // null → unchanged; empty string → clear (for description / url / location).
+        if let title = title { ekEvent.title = title }
+        if let isAllDay = isAllDay { ekEvent.isAllDay = isAllDay }
+        if let startDate = startDate { ekEvent.startDate = startDate }
+        if let endDate = endDate { ekEvent.endDate = endDate }
+        if let description = description { ekEvent.notes = description.isEmpty ? nil : description }
+        if let url = url { ekEvent.url = url.isEmpty ? nil : URL(string: url) }
+        if let location = location { ekEvent.location = location.isEmpty ? nil : location }
+        if let rruleStr = recurrenceRule {
+            if rruleStr.isEmpty {
+                ekEvent.recurrenceRules = nil
+            } else {
+                do {
+                    let rule = try RecurrenceRuleParser.parse(rrule: rruleStr, dtstart: ekEvent.startDate)
+                    ekEvent.recurrenceRules = [rule]
+                } catch let err as RecurrenceRuleParserError {
+                    throw PigeonError(
+                        code: "INVALID_RRULE",
+                        message: "Failed to parse recurrenceRule",
+                        details: "\(err)"
+                    )
+                }
+            }
+        }
+        if let timeIntervals = timeIntervals {
+            ekEvent.alarms = timeIntervals.compactMap { EKAlarm(relativeOffset: $0) }
+        }
+        // Phase 2E will surface excludedDates round-trip on iOS; accepted-but-unused
+        // here for parity with the createEvent signature.
+        _ = excludedDates
+
+        // iOS 26 quirk: saving a recurring master with `.thisEvent` silently
+        // strips its recurrenceRule (detaches it into a one-off). When the
+        // caller targets the master directly (occurrenceTime == nil) and the
+        // event has a rule, use `.futureEvents` to preserve the series.
+        let effectiveSpan: EKSpan = (occurrenceTime == nil
+            && ekEvent.hasRecurrenceRules
+            && span == .thisEvent)
+            ? .futureEvents
+            : span
+
+        do {
+            try eventStore.save(ekEvent, span: effectiveSpan, commit: true)
+            // EventKit can rebuild the EKEvent reference internally during
+            // save (especially for .futureEvents which splits the series).
+            // Re-fetch via predicate so the returned Event reflects the
+            // post-commit state with eagerly-loaded recurrenceRules — Apple
+            // doesn't surface them on the basic event(withIdentifier:) path.
+            let fresh = retrieveMasterWithRecurrence(eventId: ekEvent.eventIdentifier)
+            return (fresh ?? ekEvent).toEvent()
+        } catch {
+            eventStore.reset()
+            throw PigeonError(
+                code: "GENERIC_ERROR",
+                message: "Event not updated",
+                details: error.localizedDescription
+            )
+        }
+    }
+
+    /// Returns the master EKEvent with `recurrenceRules` populated.
+    /// `EKEventStore.event(withIdentifier:)` alone returns a stripped handle
+    /// where `recurrenceRules` is nil on iOS 16+ even for recurring masters.
+    /// `events(matching:)` returns both the master AND expanded occurrences
+    /// (all sharing the same `eventIdentifier`) — only the master has
+    /// `recurrenceRules` populated. Pick that one.
+    private func retrieveMasterWithRecurrence(eventId: String) -> EKEvent? {
+        guard let basic = eventStore.event(withIdentifier: eventId) else { return nil }
+        if basic.recurrenceRules?.isEmpty == false {
+            return basic
+        }
+        let predicate = eventStore.predicateForEvents(
+            withStart: basic.startDate,
+            end: basic.startDate.addingTimeInterval(86400),
+            calendars: [basic.calendar]
+        )
+        let candidates = eventStore.events(matching: predicate)
+            .filter { $0.eventIdentifier == eventId }
+        return candidates.first(where: { $0.recurrenceRules?.isEmpty == false })
+            ?? candidates.first
+            ?? basic
+    }
+
+    /// Locates the EKEvent instance for a specific occurrence by enumerating
+    /// the series' calendar within a ±1 day window around `occurrenceTime`
+    /// and picking the closest match by startDate. EventKit gives every
+    /// occurrence the master's `calendarItemIdentifier`, so we filter by
+    /// that to scope the search to this series.
+    private func findOccurrence(eventId: String, occurrenceTime: Date) -> EKEvent? {
+        guard let master = eventStore.event(withIdentifier: eventId) else { return nil }
+        let windowStart = occurrenceTime.addingTimeInterval(-86400)
+        let windowEnd = occurrenceTime.addingTimeInterval(86400)
+        let predicate = eventStore.predicateForEvents(
+            withStart: windowStart, end: windowEnd, calendars: [master.calendar]
+        )
+        let candidates = eventStore.events(matching: predicate)
+            .filter { $0.calendarItemIdentifier == master.calendarItemIdentifier }
+        return candidates.min(by: {
+            abs($0.startDate.timeIntervalSince(occurrenceTime)) <
+                abs($1.startDate.timeIntervalSince(occurrenceTime))
+        })
+    }
+
     func deleteEvent(eventId: String) throws {
         guard let event = eventStore.event(withIdentifier: eventId) else {
             throw PigeonError(
