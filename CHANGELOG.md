@@ -1,3 +1,13 @@
+## [Unreleased]
+
+### Added — RRULE Phase 2A (positional BYDAY)
+* iOS parser accepts RFC 5545 ordwk prefix on BYDAY tokens — `1FR`, `-1FR`, `2TH`, `-2MO`, etc. Range validated to `[-53,-1] ∪ [1,53]`.
+* iOS serializer emits canonical positional form without leading `+` — `EKRecurrenceDayOfWeek(.friday, weekNumber: -1)` → `BYDAY=-1FR`.
+* 4 previously-red parser tests turn green: `test_rfc_monthlyFirstFriday`, `test_rfc_monthlyLastFriday`, `test_rfc_monthlySecondToLastMonday`, `test_gcal_monthlySecondThursday`.
+* 4 new round-trip tests in `RecurrenceRuleRoundtripTests.swift` plus an inverted serializer assertion (`test_serialize_emits_positionalByDay`).
+* 3 new Android validator acceptance tests guard the lenient-by-design behavior.
+* iOS suite: 108 green / 4 red (the remaining 4 are Phase 2B BYSETPOS + 2C WKST).
+
 ## 2.2.0
 * **Definitive fix in `createEventInDefaultCalendar` & `createEventThroughNativePlatform` on Android :**: using ical format under the hood
 
