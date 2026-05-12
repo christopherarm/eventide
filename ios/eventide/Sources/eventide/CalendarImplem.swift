@@ -114,7 +114,12 @@ class CalendarImplem: CalendarApi {
         reminders: [Int64]?,
         recurrenceRule: String?,
         excludedDates: [Int64]?,
+        recurrenceDates: [Int64]?,
         completion: @escaping (Result<Event, Error>) -> Void) {
+        // Phase 2F: iOS write-side limitation parallel to EXDATE — EventKit has
+        // no public RDATE accessor. Accepted-but-unused for cross-platform
+        // signature parity; Android round-trips fully.
+        _ = recurrenceDates
         permissionHandler.checkCalendarAccessThenExecute(.writeOnly) { [self] in
             do {
                 let createdEvent = try easyEventStore.createEvent(
@@ -158,8 +163,10 @@ class CalendarImplem: CalendarApi {
         reminders: [Int64]?,
         recurrenceRule: String?,
         excludedDates: [Int64]?,
+        recurrenceDates: [Int64]?,
         completion: @escaping (Result<Void, any Error>) -> Void
     ) {
+        _ = recurrenceDates  // see createEvent — iOS RDATE write is no-op
         permissionHandler.checkCalendarAccessThenExecute(.writeOnly) { [self] in
             do {
                 let createdEvent = try easyEventStore.createEvent(
@@ -203,11 +210,14 @@ class CalendarImplem: CalendarApi {
         reminders: [Int64]?,
         recurrenceRule: String?,
         excludedDates: [Int64]?,
+        recurrenceDates: [Int64]?,
         completion: @escaping (Result<Void, any Error>) -> Void
     ) {
         // Phase 1: recurrenceRule/excludedDates not used by native UI path yet.
+        // Phase 2F: recurrenceDates likewise no-op here.
         _ = recurrenceRule
         _ = excludedDates
+        _ = recurrenceDates
         easyEventStore.presentEventCreationViewController(
             title: title,
             startDate: startDate != nil ? Date(from: startDate!) : nil,
@@ -268,8 +278,10 @@ class CalendarImplem: CalendarApi {
         reminders: [Int64]?,
         recurrenceRule: String?,
         excludedDates: [Int64]?,
+        recurrenceDates: [Int64]?,
         completion: @escaping (Result<Event, any Error>) -> Void
     ) {
+        _ = recurrenceDates  // iOS RDATE write is no-op; see createEvent
         permissionHandler.checkCalendarAccessThenExecute(.fullAccess) { [self] in
             do {
                 // Map Pigeon UpdateSpan -> EKSpan. `allEvents` operates on the

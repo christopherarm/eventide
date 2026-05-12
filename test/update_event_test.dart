@@ -59,6 +59,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => updatedEvent);
 
@@ -84,6 +85,7 @@ void main() {
           reminders: null,
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     });
@@ -104,6 +106,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => updatedEvent);
 
@@ -129,6 +132,7 @@ void main() {
           reminders: null,
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     });
@@ -149,6 +153,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => updatedEvent);
 
@@ -173,6 +178,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).captured;
       expect(captured.single, UpdateSpan.thisAndFuture);
@@ -194,6 +200,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => updatedEvent);
 
@@ -218,6 +225,7 @@ void main() {
           reminders: captureAny(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).captured;
       expect(captured.single, equals([30, 60]));
@@ -239,6 +247,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => updatedEvent);
 
@@ -268,6 +277,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: captureAny(named: 'recurrenceRule'),
           excludedDates: captureAny(named: 'excludedDates'),
+          recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).captured;
       expect(result[0], 'FREQ=WEEKLY;BYDAY=MO');
@@ -290,6 +300,7 @@ void main() {
           reminders: any(named: 'reminders'),
           recurrenceRule: any(named: 'recurrenceRule'),
           excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenThrow(PlatformException(code: 'NOT_FOUND', message: 'gone'));
 

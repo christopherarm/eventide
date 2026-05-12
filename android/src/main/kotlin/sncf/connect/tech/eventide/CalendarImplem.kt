@@ -362,6 +362,7 @@ class CalendarImplem(
         reminders: List<Long>?,
         recurrenceRule: String?,
         excludedDates: List<Long>?,
+        recurrenceDates: List<Long>?,
         callback: (Result<Event>) -> Unit
     ) {
         permissionHandler.requestWritePermission { granted ->
@@ -422,6 +423,14 @@ class CalendarImplem(
                                     excludedDates.joinToString(",") { formatExdateUtc(it) }
                                 )
                             }
+                            // Phase 2F: RDATE column carries additional explicit
+                            // occurrence dates beyond the RRULE expansion.
+                            if (!recurrenceDates.isNullOrEmpty()) {
+                                eventValues.put(
+                                    CalendarContract.Events.RDATE,
+                                    recurrenceDates.joinToString(",") { formatExdateUtc(it) }
+                                )
+                            }
                         } else {
                             eventValues.put(CalendarContract.Events.DTEND, endDate)
                         }
@@ -459,6 +468,7 @@ class CalendarImplem(
                                     attendees = emptyList(),
                                     recurrenceRule = recurrenceRule,
                                     excludedDates = excludedDates,
+                                    recurrenceDates = recurrenceDates,
                                 )
                                 callback(Result.success(event))
                             } else {
@@ -521,11 +531,14 @@ class CalendarImplem(
         reminders: List<Long>?,
         recurrenceRule: String?,
         excludedDates: List<Long>?,
+        recurrenceDates: List<Long>?,
         callback: (Result<Unit>) -> Unit
     ) {
-        // Phase 1: recurrenceRule/excludedDates not yet propagated through ICS path.
+        // The ICS share path doesn't surface recurrence at all yet; explicitly
+        // accept the args to satisfy the Pigeon interface.
         @Suppress("UNUSED_VARIABLE") val r = recurrenceRule
         @Suppress("UNUSED_VARIABLE") val e = excludedDates
+        @Suppress("UNUSED_VARIABLE") val d = recurrenceDates
         shareEventAsIcs(
             title = title, startDate = startDate, endDate = endDate, isAllDay = isAllDay,
             description = description, url = url, location = location, reminders = reminders,
@@ -544,10 +557,12 @@ class CalendarImplem(
         reminders: List<Long>?,
         recurrenceRule: String?,
         excludedDates: List<Long>?,
+        recurrenceDates: List<Long>?,
         callback: (Result<Unit>) -> Unit
     ) {
         @Suppress("UNUSED_VARIABLE") val r = recurrenceRule
         @Suppress("UNUSED_VARIABLE") val e = excludedDates
+        @Suppress("UNUSED_VARIABLE") val d = recurrenceDates
         shareEventAsIcs(
             title = title, startDate = startDate, endDate = endDate, isAllDay = isAllDay,
             description = description, url = url, location = location, reminders = reminders,
@@ -593,6 +608,7 @@ class CalendarImplem(
                         CalendarContract.Events.ALL_DAY,
                         CalendarContract.Events.RRULE,
                         CalendarContract.Events.EXDATE,
+                        CalendarContract.Events.RDATE,
                         CalendarContract.Events.DURATION,
                         CalendarContract.Events.LAST_DATE,
                         CalendarContract.Events.ORIGINAL_ID,
@@ -626,6 +642,8 @@ class CalendarImplem(
                             val rrule = if (c.isNull(rruleIdx)) null else c.getString(rruleIdx)
                             val exdateIdx = c.getColumnIndexOrThrow(CalendarContract.Events.EXDATE)
                             val exdateRaw = if (c.isNull(exdateIdx)) null else c.getString(exdateIdx)
+                            val rdateIdx = c.getColumnIndexOrThrow(CalendarContract.Events.RDATE)
+                            val rdateRaw = if (c.isNull(rdateIdx)) null else c.getString(rdateIdx)
                             val durationIdx = c.getColumnIndexOrThrow(CalendarContract.Events.DURATION)
                             val duration = if (c.isNull(durationIdx)) null else c.getString(durationIdx)
                             // Recurring rows store DURATION instead of DTEND; compute first-occurrence end.
@@ -635,7 +653,8 @@ class CalendarImplem(
                                 val dtendIdx = c.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
                                 if (c.isNull(dtendIdx)) start else c.getLong(dtendIdx)
                             }
-                            val excludedDates = exdateRaw?.let { parseExdateList(it) } ?: emptyList()
+                            val excludedDates = exdateRaw?.let { parseRfc5545DateList(it) } ?: emptyList()
+                            val recurrenceDates = rdateRaw?.let { parseRfc5545DateList(it) } ?: emptyList()
                             val isAllDay = c.getInt(c.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)).toBoolean()
 
                             val attendees = mutableListOf<Attendee>()
@@ -680,6 +699,7 @@ class CalendarImplem(
                                     attendees = attendees,
                                     recurrenceRule = rrule,
                                     excludedDates = excludedDates,
+                                    recurrenceDates = recurrenceDates,
                                     originalEventId = null,
                                     originalInstanceTime = null,
                                 )
@@ -848,6 +868,7 @@ class CalendarImplem(
         reminders: List<Long>?,
         recurrenceRule: String?,
         excludedDates: List<Long>?,
+        recurrenceDates: List<Long>?,
         callback: (Result<Event>) -> Unit
     ) {
         permissionHandler.requestWritePermission { granted ->
@@ -904,6 +925,7 @@ class CalendarImplem(
                             location = location,
                             recurrenceRule = recurrenceRule,
                             excludedDates = excludedDates,
+                            recurrenceDates = recurrenceDates,
                             callback = callback
                         )
                         UpdateSpan.THIS_EVENT -> insertDetachedChild(
@@ -953,6 +975,7 @@ class CalendarImplem(
         title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?,
         description: String?, url: String?, location: String?,
         recurrenceRule: String?, excludedDates: List<Long>?,
+        recurrenceDates: List<Long>?,
         callback: (Result<Event>) -> Unit
     ) {
         val values = ContentValues()
@@ -983,6 +1006,16 @@ class CalendarImplem(
                 values.put(
                     CalendarContract.Events.EXDATE,
                     excludedDates.joinToString(",") { formatExdateUtc(it) }
+                )
+            }
+        }
+        if (recurrenceDates != null) {
+            if (recurrenceDates.isEmpty()) {
+                values.putNull(CalendarContract.Events.RDATE)
+            } else {
+                values.put(
+                    CalendarContract.Events.RDATE,
+                    recurrenceDates.joinToString(",") { formatExdateUtc(it) }
                 )
             }
         }
@@ -1446,6 +1479,7 @@ class CalendarImplem(
                 CalendarContract.Events.ALL_DAY,
                 CalendarContract.Events.RRULE,
                 CalendarContract.Events.EXDATE,
+                CalendarContract.Events.RDATE,
                 CalendarContract.Events.DURATION,
             )
             val selection = CalendarContract.Events._ID + " = ?"
@@ -1468,6 +1502,8 @@ class CalendarImplem(
                     val rrule = if (it.isNull(rruleIdx)) null else it.getString(rruleIdx)
                     val exdateIdx = it.getColumnIndexOrThrow(CalendarContract.Events.EXDATE)
                     val exdateRaw = if (it.isNull(exdateIdx)) null else it.getString(exdateIdx)
+                    val rdateIdx = it.getColumnIndexOrThrow(CalendarContract.Events.RDATE)
+                    val rdateRaw = if (it.isNull(rdateIdx)) null else it.getString(rdateIdx)
                     val durationIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DURATION)
                     val duration = if (it.isNull(durationIdx)) null else it.getString(durationIdx)
                     val endDate = if (rrule != null && duration != null) {
@@ -1476,7 +1512,8 @@ class CalendarImplem(
                         val dtendIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
                         if (it.isNull(dtendIdx)) startDate else it.getLong(dtendIdx)
                     }
-                    val excludedDates = exdateRaw?.let { parseExdateList(it) } ?: emptyList()
+                    val excludedDates = exdateRaw?.let { parseRfc5545DateList(it) } ?: emptyList()
+                    val recurrenceDates = rdateRaw?.let { parseRfc5545DateList(it) } ?: emptyList()
                     val calendarId = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.CALENDAR_ID))
 
                     val attendees = mutableListOf<Attendee>()
@@ -1520,6 +1557,7 @@ class CalendarImplem(
                         attendees = attendees,
                         recurrenceRule = rrule,
                         excludedDates = excludedDates,
+                        recurrenceDates = recurrenceDates,
                     )
                 }
             }
@@ -1702,11 +1740,11 @@ class CalendarImplem(
     }
 
     /**
-     * Parses an RFC 5545 EXDATE column value (comma-separated UTC times) back
-     * into a list of ms-since-epoch instants. Tolerates Apple's date-only
-     * floating form (`YYYYMMDD`) per plan-research finding #1.
+     * Parses an RFC 5545 EXDATE / RDATE column value (comma-separated UTC
+     * times) back into a list of ms-since-epoch instants. Tolerates Apple's
+     * date-only floating form (`YYYYMMDD`) per plan-research finding #1.
      */
-    internal fun parseExdateList(raw: String): List<Long> {
+    internal fun parseRfc5545DateList(raw: String): List<Long> {
         val out = mutableListOf<Long>()
         for (token in raw.split(",")) {
             val t = token.trim()

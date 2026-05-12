@@ -127,7 +127,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -167,7 +168,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -197,7 +199,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -225,7 +228,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
         }
@@ -254,7 +258,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -457,7 +462,8 @@ class EventTests {
             location = null,
             reminders = emptyList(),
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -505,7 +511,8 @@ class EventTests {
             location = null,
             reminders = listOf(10L, 30L),
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -553,7 +560,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -601,7 +609,8 @@ class EventTests {
             location = null,
             reminders = emptyList(),
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -649,7 +658,8 @@ class EventTests {
             location = null,
             reminders = listOf(10L, 30L),
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()
@@ -697,7 +707,8 @@ class EventTests {
             location = null,
             reminders = null,
             recurrenceRule = null,
-            excludedDates = null
+            excludedDates = null,
+            recurrenceDates = null
         ) {
             result = it
             latch.countDown()

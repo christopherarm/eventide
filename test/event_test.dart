@@ -74,6 +74,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -101,6 +102,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).called(1);
   });
@@ -134,6 +136,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -161,6 +164,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).called(1);
   });
@@ -180,6 +184,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenThrow(ETGenericException(message: 'API Error'));
 
@@ -202,6 +207,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).called(1);
   });
@@ -235,6 +241,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -260,6 +267,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -291,6 +299,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -315,6 +324,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -333,6 +343,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenThrow(ETGenericException(message: 'API Error'));
 
@@ -354,6 +365,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -395,6 +407,7 @@ void main() {
           reminders: any(named: 'reminders'),
         recurrenceRule: any(named: 'recurrenceRule'),
         excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -422,6 +435,7 @@ void main() {
           reminders: [10 * 60, 20 * 60],
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     });
@@ -452,6 +466,7 @@ void main() {
           reminders: any(named: 'reminders'),
         recurrenceRule: any(named: 'recurrenceRule'),
         excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -482,6 +497,7 @@ void main() {
           reminders: [10, 20],
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     });
@@ -513,6 +529,7 @@ void main() {
           reminders: any(named: 'reminders'),
         recurrenceRule: any(named: 'recurrenceRule'),
         excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -540,6 +557,7 @@ void main() {
           reminders: [10, 20],
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     });
@@ -559,6 +577,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async {});
 
@@ -586,6 +605,7 @@ void main() {
         reminders: [10],
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -604,6 +624,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async {});
 
@@ -623,6 +644,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -643,6 +665,7 @@ void main() {
           reminders: any(named: 'reminders'),
         recurrenceRule: any(named: 'recurrenceRule'),
         excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
         ),
       ).thenThrow(ETPresentationException(message: 'Presentation Error'));
 
@@ -664,6 +687,7 @@ void main() {
           reminders: null,
         recurrenceRule: null,
         excludedDates: null,
+          recurrenceDates: null,
         ),
       ).called(1);
     },
@@ -683,6 +707,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenThrow(ETUserCanceledException(message: 'User Cancelled'));
 
@@ -704,6 +729,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -766,6 +792,7 @@ void main() {
         reminders: any(named: 'reminders'),
       recurrenceRule: any(named: 'recurrenceRule'),
       excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
       ),
     ).thenAnswer((_) async => mockEvent);
 
@@ -789,6 +816,7 @@ void main() {
         reminders: null,
       recurrenceRule: null,
       excludedDates: null,
+        recurrenceDates: null,
       ),
     ).called(1);
   });
@@ -856,6 +884,7 @@ void main() {
           attendees: [],
           recurrenceRule: null,
           excludedDates: null,
+          recurrenceDates: null,
         ),
       ];
       final etEvents = events.toETEventList();

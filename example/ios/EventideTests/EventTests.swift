@@ -47,7 +47,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success(let event):
@@ -99,7 +100,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -540,7 +542,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -685,7 +688,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { createEventResult in
             switch (createEventResult) {
             case .success:
@@ -831,7 +835,8 @@ final class EventTests: XCTestCase {
             location: "Paris",
             reminders: [900],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -880,7 +885,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [3600, 7200],
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -929,7 +935,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: nil,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -977,7 +984,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [900], // 15 minutes
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1012,7 +1020,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: nil,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1053,7 +1062,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: nil,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1094,7 +1104,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: [300, 600], // 5 and 10 minutes
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1128,7 +1139,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: nil,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:
@@ -1167,7 +1179,8 @@ final class EventTests: XCTestCase {
             location: nil,
             reminders: nil,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            recurrenceDates: nil
         ) { result in
             switch result {
             case .success:

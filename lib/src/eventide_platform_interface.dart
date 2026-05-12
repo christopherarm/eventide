@@ -41,6 +41,7 @@ abstract class EventidePlatform extends PlatformInterface {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   });
 
   Future<void> createEventInDefaultCalendar({
@@ -54,6 +55,7 @@ abstract class EventidePlatform extends PlatformInterface {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   });
 
   Future<void> createEventThroughNativePlatform({
@@ -67,6 +69,7 @@ abstract class EventidePlatform extends PlatformInterface {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   });
 
   Future<Iterable<ETEvent>> retrieveEvents({
@@ -92,6 +95,7 @@ abstract class EventidePlatform extends PlatformInterface {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   });
 
   Future<ETEvent> createReminder({required String eventId, required Duration durationBeforeEvent});
@@ -197,6 +201,7 @@ final class ETEvent {
   final String? location;
   final String? recurrenceRule;
   final Iterable<DateTime> excludedDates;
+  final Iterable<DateTime> recurrenceDates;
   final String? originalEventId;
   final DateTime? originalInstanceTime;
 
@@ -218,6 +223,7 @@ final class ETEvent {
     location,
     recurrenceRule,
     ...excludedDates,
+    ...recurrenceDates,
     originalEventId,
     originalInstanceTime,
   ]);
@@ -236,6 +242,7 @@ final class ETEvent {
     this.location,
     this.recurrenceRule,
     this.excludedDates = const [],
+    this.recurrenceDates = const [],
     this.originalEventId,
     this.originalInstanceTime,
   });
@@ -258,6 +265,7 @@ final class ETEvent {
           other.location == location &&
           other.recurrenceRule == recurrenceRule &&
           listEquals(List.from(other.excludedDates), List.from(excludedDates)) &&
+          listEquals(List.from(other.recurrenceDates), List.from(recurrenceDates)) &&
           other.originalEventId == originalEventId &&
           other.originalInstanceTime == originalInstanceTime;
 }

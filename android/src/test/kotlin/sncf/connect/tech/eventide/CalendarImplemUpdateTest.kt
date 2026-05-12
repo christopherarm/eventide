@@ -79,7 +79,7 @@ class CalendarImplemUpdateTest {
             occurrenceTimeUtcMs = null,
             title = "x", startDate = null, endDate = null, isAllDay = null,
             description = null, url = null, location = null,
-            reminders = null, recurrenceRule = null, excludedDates = null
+            reminders = null, recurrenceRule = null, excludedDates = null, recurrenceDates = null
         ) { result ->
             result.onFailure { resultCode = (it as? FlutterError)?.code }
             latch.countDown()
@@ -101,7 +101,7 @@ class CalendarImplemUpdateTest {
             title = null, startDate = null, endDate = null, isAllDay = null,
             description = null, url = null, location = null,
             reminders = null,
-            recurrenceRule = "FREQ=BOGUS", excludedDates = null
+            recurrenceRule = "FREQ=BOGUS", excludedDates = null, recurrenceDates = null
         ) { result ->
             result.onFailure { resultCode = (it as? FlutterError)?.code }
             latch.countDown()
@@ -122,7 +122,7 @@ class CalendarImplemUpdateTest {
             occurrenceTimeUtcMs = null,
             title = "x", startDate = null, endDate = null, isAllDay = null,
             description = null, url = null, location = null,
-            reminders = null, recurrenceRule = null, excludedDates = null
+            reminders = null, recurrenceRule = null, excludedDates = null, recurrenceDates = null
         ) { result ->
             result.onFailure { resultCode = (it as? FlutterError)?.code }
             latch.countDown()
@@ -143,7 +143,7 @@ class CalendarImplemUpdateTest {
             occurrenceTimeUtcMs = null,
             title = "x", startDate = null, endDate = null, isAllDay = null,
             description = null, url = null, location = null,
-            reminders = null, recurrenceRule = null, excludedDates = null
+            reminders = null, recurrenceRule = null, excludedDates = null, recurrenceDates = null
         ) { result ->
             result.onFailure { resultCode = (it as? FlutterError)?.code }
             latch.countDown()
@@ -179,5 +179,27 @@ class CalendarImplemUpdateTest {
         assertTrue(out.contains("FREQ=DAILY"))
         assertTrue(out.contains("UNTIL=20261001T120000Z"))
         assertTrue(!out.contains("COUNT="))
+    }
+
+    // Phase 2F: parseRfc5545DateList is shared between EXDATE and RDATE
+    // columns. It MUST tolerate the same set of input forms as Phase 1's
+    // parseExdateList did (RFC 5545 UTC, Apple's date-only fallback).
+    @Test
+    fun `parseRfc5545DateList parses RFC 5545 UTC datetime`() {
+        val out = calendarImplem.parseRfc5545DateList("20261015T120000Z,20261101T080000Z")
+        assertEquals(2, out.size)
+    }
+
+    @Test
+    fun `parseRfc5545DateList parses Apple date-only floating form`() {
+        // YYYYMMDD form (no T/Z). Apple emits this for all-day RRULE-EXDATE.
+        val out = calendarImplem.parseRfc5545DateList("20261015,20261101")
+        assertEquals(2, out.size)
+    }
+
+    @Test
+    fun `parseRfc5545DateList skips empty tokens and whitespace`() {
+        val out = calendarImplem.parseRfc5545DateList(" , 20261015T120000Z , ")
+        assertEquals(1, out.size)
     }
 }

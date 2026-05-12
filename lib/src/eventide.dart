@@ -131,6 +131,7 @@ class Eventide extends EventidePlatform {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   }) async {
     try {
       final event = await _calendarApi.createEvent(
@@ -145,6 +146,7 @@ class Eventide extends EventidePlatform {
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
         recurrenceRule: recurrenceRule,
         excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
+        recurrenceDates: recurrenceDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
 
       return event.toETEvent().copyWithReminders(reminders);
@@ -182,6 +184,7 @@ class Eventide extends EventidePlatform {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   }) async {
     try {
       await _calendarApi.createEventInDefaultCalendar(
@@ -195,6 +198,7 @@ class Eventide extends EventidePlatform {
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
         recurrenceRule: recurrenceRule,
         excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
+        recurrenceDates: recurrenceDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
     } on PlatformException catch (e) {
       throw e.toETException();
@@ -227,6 +231,7 @@ class Eventide extends EventidePlatform {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   }) async {
     try {
       await _calendarApi.createEventThroughNativePlatform(
@@ -240,6 +245,7 @@ class Eventide extends EventidePlatform {
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
         recurrenceRule: recurrenceRule,
         excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
+        recurrenceDates: recurrenceDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
     } on PlatformException catch (e) {
       throw e.toETException();
@@ -329,6 +335,7 @@ class Eventide extends EventidePlatform {
     Iterable<Duration>? reminders,
     String? recurrenceRule,
     Iterable<DateTime>? excludedDates,
+    Iterable<DateTime>? recurrenceDates,
   }) async {
     try {
       final event = await _calendarApi.updateEvent(
@@ -345,6 +352,7 @@ class Eventide extends EventidePlatform {
         reminders: reminders?.map((e) => e.toNativeDuration()).toList(),
         recurrenceRule: recurrenceRule,
         excludedDates: excludedDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
+        recurrenceDates: recurrenceDates?.map((d) => d.toUtc().millisecondsSinceEpoch).toList(),
       );
       return reminders != null
           ? event.toETEvent().copyWithReminders(reminders)

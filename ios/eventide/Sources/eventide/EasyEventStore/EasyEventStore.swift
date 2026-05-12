@@ -667,6 +667,7 @@ fileprivate extension EKEvent {
             location: location,
             recurrenceRule: recurrenceRules?.first.flatMap { try? RecurrenceRuleParser.serialize($0) },
             excludedDates: nil,  // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
+            recurrenceDates: nil,  // Phase 2F iOS limitation: EventKit has no public RDATE accessor
             originalEventId: masterId,
             originalInstanceTime: originalInstanceMs
         )

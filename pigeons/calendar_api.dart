@@ -42,6 +42,7 @@ abstract class CalendarApi {
     required List<int>? reminders,
     required String? recurrenceRule,
     required List<int>? excludedDates,
+    required List<int>? recurrenceDates,
   });
 
   @async
@@ -56,6 +57,7 @@ abstract class CalendarApi {
     required List<int>? reminders,
     required String? recurrenceRule,
     required List<int>? excludedDates,
+    required List<int>? recurrenceDates,
   });
 
   @async
@@ -70,6 +72,7 @@ abstract class CalendarApi {
     List<int>? reminders,
     String? recurrenceRule,
     List<int>? excludedDates,
+    List<int>? recurrenceDates,
   });
 
   /// Updates an existing event. All optional field params follow
@@ -102,6 +105,7 @@ abstract class CalendarApi {
     required List<int>? reminders,
     required String? recurrenceRule,
     required List<int>? excludedDates,
+    required List<int>? recurrenceDates,
   });
 
   @async
@@ -173,6 +177,11 @@ final class Event {
   // Phase 1 iOS limitation: read-side surfaces empty list because EventKit
   // has no public EXDATE accessor; full round-trip on Android only.
   final List<int>? excludedDates;
+  // RDATE values as ms-since-epoch UTC. Phase 2F: full round-trip on
+  // Android via the CalendarContract.Events.RDATE column. iOS accepts on
+  // write but ignores (parity with EXDATE) and always returns null on
+  // read — EventKit has no public RDATE accessor.
+  final List<int>? recurrenceDates;
   // For detached occurrences (events that were modified out of their
   // recurring series), points at the master event's id. Null for
   // non-detached events. iOS: EKEvent.isDetached == true. Android:
@@ -198,6 +207,7 @@ final class Event {
     required this.location,
     required this.recurrenceRule,
     required this.excludedDates,
+    required this.recurrenceDates,
     required this.originalEventId,
     required this.originalInstanceTime,
   });

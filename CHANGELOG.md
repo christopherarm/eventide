@@ -35,6 +35,12 @@
 * Android: 123 green / 0 red.
 * Dart: 84 green / 0 red.
 
+### Added — Phase 2F (RDATE round-trip on Android)
+* Pigeon `Event` gains `recurrenceDates` (`List<int>?` UTC ms). ETEvent mirrors as `Iterable<DateTime>`. Same accept-on-write/ignore-on-iOS pattern as EXDATE: Android persists the column with full round-trip; iOS accepts the param for cross-platform parity but stores nothing (EventKit has no public RDATE accessor).
+* **Android** (`CalendarImplem`): `createEvent` and `updateEvent` write the `CalendarContract.Events.RDATE` column when `recurrenceDates` is non-empty. `retrieveEvents` and the private `retrieveEvent` helper project `RDATE` and parse via the renamed `parseRfc5545DateList` helper (formerly `parseExdateList` — now shared between EXDATE and RDATE).
+* **Dart** (`Eventide`): `createEvent`, `createEventInDefaultCalendar`, `createEventThroughNativePlatform`, and `updateEvent` accept `Iterable<DateTime>? recurrenceDates`, converted to UTC ms-since-epoch before the platform call. `EventToETEvent` populates the new field; `ETEventCopy.copyWithReminders` preserves it.
+* Tests: 3 new Android Robolectric tests cover the renamed `parseRfc5545DateList` helper (RFC 5545 UTC datetime, Apple's date-only floating form, whitespace tolerance). 1 new Dart pigeon round-trip test verifies the field surfacing.
+
 ### Added — Phase 2E (detached occurrences on read)
 * Pigeon `Event` gains `originalEventId` (String?) and `originalInstanceTime` (int? UTC ms) — non-null only for detached occurrences. ETEvent mirrors both, plus an `isDetached` convenience getter.
 * **iOS** (`EasyEventStore.retrieveEvents`): splits the predicate result into masters (deduped by `calendarItemIdentifier`) and detached events (`isDetached == true`). Each detached entry gets `originalEventId` resolved by preferring a shared `calendarItemExternalIdentifier` (the iCalendar UID, identical on CalDAV-synced calendars) with a fallback to the only master in the same calendar. `originalInstanceTime` is the detached event's startDate as a best-effort approximation — EventKit doesn't expose RECURRENCE-ID publicly.

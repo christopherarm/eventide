@@ -184,6 +184,7 @@ class Event {
     this.location,
     this.recurrenceRule,
     this.excludedDates,
+    this.recurrenceDates,
     this.originalEventId,
     this.originalInstanceTime,
   });
@@ -214,6 +215,8 @@ class Event {
 
   List<int>? excludedDates;
 
+  List<int>? recurrenceDates;
+
   String? originalEventId;
 
   int? originalInstanceTime;
@@ -233,6 +236,7 @@ class Event {
       location,
       recurrenceRule,
       excludedDates,
+      recurrenceDates,
       originalEventId,
       originalInstanceTime,
     ];
@@ -257,8 +261,9 @@ class Event {
       location: result[10] as String?,
       recurrenceRule: result[11] as String?,
       excludedDates: (result[12] as List<Object?>?)?.cast<int>(),
-      originalEventId: result[13] as String?,
-      originalInstanceTime: result[14] as int?,
+      recurrenceDates: (result[13] as List<Object?>?)?.cast<int>(),
+      originalEventId: result[14] as String?,
+      originalInstanceTime: result[15] as int?,
     );
   }
 
@@ -271,7 +276,7 @@ class Event {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(id, other.id) && _deepEquals(calendarId, other.calendarId) && _deepEquals(title, other.title) && _deepEquals(isAllDay, other.isAllDay) && _deepEquals(startDate, other.startDate) && _deepEquals(endDate, other.endDate) && _deepEquals(reminders, other.reminders) && _deepEquals(attendees, other.attendees) && _deepEquals(description, other.description) && _deepEquals(url, other.url) && _deepEquals(location, other.location) && _deepEquals(recurrenceRule, other.recurrenceRule) && _deepEquals(excludedDates, other.excludedDates) && _deepEquals(originalEventId, other.originalEventId) && _deepEquals(originalInstanceTime, other.originalInstanceTime);
+    return _deepEquals(id, other.id) && _deepEquals(calendarId, other.calendarId) && _deepEquals(title, other.title) && _deepEquals(isAllDay, other.isAllDay) && _deepEquals(startDate, other.startDate) && _deepEquals(endDate, other.endDate) && _deepEquals(reminders, other.reminders) && _deepEquals(attendees, other.attendees) && _deepEquals(description, other.description) && _deepEquals(url, other.url) && _deepEquals(location, other.location) && _deepEquals(recurrenceRule, other.recurrenceRule) && _deepEquals(excludedDates, other.excludedDates) && _deepEquals(recurrenceDates, other.recurrenceDates) && _deepEquals(originalEventId, other.originalEventId) && _deepEquals(originalInstanceTime, other.originalInstanceTime);
   }
 
   @override
@@ -525,14 +530,14 @@ class CalendarApi {
     ;
   }
 
-  Future<Event> createEvent({required String calendarId, required String title, required int startDate, required int endDate, required bool isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, }) async {
+  Future<Event> createEvent({required String calendarId, required String title, required int startDate, required int endDate, required bool isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, required List<int>? recurrenceDates, }) async {
     final pigeonVar_channelName = 'dev.flutter.pigeon.eventide.CalendarApi.createEvent$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[calendarId, title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[calendarId, title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates, recurrenceDates]);
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 
     final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
@@ -544,14 +549,14 @@ class CalendarApi {
     return pigeonVar_replyValue! as Event;
   }
 
-  Future<void> createEventInDefaultCalendar({required String title, required int startDate, required int endDate, required bool isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, }) async {
+  Future<void> createEventInDefaultCalendar({required String title, required int startDate, required int endDate, required bool isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, required List<int>? recurrenceDates, }) async {
     final pigeonVar_channelName = 'dev.flutter.pigeon.eventide.CalendarApi.createEventInDefaultCalendar$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates, recurrenceDates]);
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 
     _extractReplyValueOrThrow(
@@ -562,14 +567,14 @@ class CalendarApi {
     ;
   }
 
-  Future<void> createEventThroughNativePlatform({String? title, int? startDate, int? endDate, bool? isAllDay, String? description, String? url, String? location, List<int>? reminders, String? recurrenceRule, List<int>? excludedDates, }) async {
+  Future<void> createEventThroughNativePlatform({String? title, int? startDate, int? endDate, bool? isAllDay, String? description, String? url, String? location, List<int>? reminders, String? recurrenceRule, List<int>? excludedDates, List<int>? recurrenceDates, }) async {
     final pigeonVar_channelName = 'dev.flutter.pigeon.eventide.CalendarApi.createEventThroughNativePlatform$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates, recurrenceDates]);
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 
     _extractReplyValueOrThrow(
@@ -595,14 +600,14 @@ class CalendarApi {
   ///
   /// `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
   /// ignored for `allEvents`.
-  Future<Event> updateEvent({required String eventId, required UpdateSpan span, required int? occurrenceTimeUtcMs, required String? title, required int? startDate, required int? endDate, required bool? isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, }) async {
+  Future<Event> updateEvent({required String eventId, required UpdateSpan span, required int? occurrenceTimeUtcMs, required String? title, required int? startDate, required int? endDate, required bool? isAllDay, required String? description, required String? url, required String? location, required List<int>? reminders, required String? recurrenceRule, required List<int>? excludedDates, required List<int>? recurrenceDates, }) async {
     final pigeonVar_channelName = 'dev.flutter.pigeon.eventide.CalendarApi.updateEvent$pigeonVar_messageChannelSuffix';
     final pigeonVar_channel = BasicMessageChannel<Object?>(
       pigeonVar_channelName,
       pigeonChannelCodec,
       binaryMessenger: pigeonVar_binaryMessenger,
     );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[eventId, span, occurrenceTimeUtcMs, title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates]);
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[eventId, span, occurrenceTimeUtcMs, title, startDate, endDate, isAllDay, description, url, location, reminders, recurrenceRule, excludedDates, recurrenceDates]);
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
 
     final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(

@@ -31,6 +31,9 @@ void main() {
     attendees: const [],
     recurrenceRule: null,
     excludedDates: null,
+    recurrenceDates: null,
+    originalEventId: null,
+    originalInstanceTime: null,
   );
 
   setUpAll(() {
@@ -55,10 +58,39 @@ void main() {
         attendees: const [],
         recurrenceRule: 'FREQ=WEEKLY;BYDAY=SA',
         excludedDates: null,
+        recurrenceDates: null,
+        originalEventId: null,
+        originalInstanceTime: null,
       );
       final et = e.toETEvent();
       expect(et.recurrenceRule, 'FREQ=WEEKLY;BYDAY=SA');
       expect(et.excludedDates, isEmpty);
+    });
+
+    test('Pigeon Event round-trips recurrenceDates via toETEvent', () {
+      final rdateMs = [
+        DateTime.utc(2026, 10, 1, 9).millisecondsSinceEpoch,
+        DateTime.utc(2026, 11, 5, 9).millisecondsSinceEpoch,
+      ];
+      final e = Event(
+        id: '1',
+        title: 'Weekly + RDATE additions',
+        isAllDay: false,
+        startDate: start.millisecondsSinceEpoch,
+        endDate: end.millisecondsSinceEpoch,
+        calendarId: 'cal1',
+        reminders: const [],
+        attendees: const [],
+        recurrenceRule: 'FREQ=WEEKLY;BYDAY=MO',
+        excludedDates: null,
+        recurrenceDates: rdateMs,
+        originalEventId: null,
+        originalInstanceTime: null,
+      );
+      final et = e.toETEvent();
+      expect(et.recurrenceDates.length, 2);
+      expect(et.recurrenceDates.first.toUtc(), DateTime.utc(2026, 10, 1, 9));
+      expect(et.recurrenceDates.last.toUtc(), DateTime.utc(2026, 11, 5, 9));
     });
 
     test('Pigeon Event round-trips excludedDates via toETEvent', () {
@@ -131,6 +163,7 @@ void main() {
             reminders: any(named: 'reminders'),
             recurrenceRule: any(named: 'recurrenceRule'),
             excludedDates: any(named: 'excludedDates'),
+      recurrenceDates: any(named: 'recurrenceDates'),
           )).thenAnswer((_) async => returned);
 
       // When
@@ -159,6 +192,7 @@ void main() {
             reminders: null,
             recurrenceRule: 'FREQ=WEEKLY;BYDAY=SA',
             excludedDates: [DateTime.utc(2026, 10, 1, 9).millisecondsSinceEpoch],
+            recurrenceDates: null,
           )).called(1);
     });
   });

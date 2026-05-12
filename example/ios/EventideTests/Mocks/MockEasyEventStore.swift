@@ -346,6 +346,7 @@ class MockEvent {
             location: location,
             recurrenceRule: nil,
             excludedDates: nil,
+            recurrenceDates: nil,
             originalEventId: nil,
             originalInstanceTime: nil
         )

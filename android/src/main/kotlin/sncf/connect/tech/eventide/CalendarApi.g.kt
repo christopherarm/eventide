@@ -279,6 +279,7 @@ data class Event (
   val location: String? = null,
   val recurrenceRule: String? = null,
   val excludedDates: List<Long>? = null,
+  val recurrenceDates: List<Long>? = null,
   val originalEventId: String? = null,
   val originalInstanceTime: Long? = null
 )
@@ -298,9 +299,10 @@ data class Event (
       val location = pigeonVar_list[10] as String?
       val recurrenceRule = pigeonVar_list[11] as String?
       val excludedDates = pigeonVar_list[12] as List<Long>?
-      val originalEventId = pigeonVar_list[13] as String?
-      val originalInstanceTime = pigeonVar_list[14] as Long?
-      return Event(id, calendarId, title, isAllDay, startDate, endDate, reminders, attendees, description, url, location, recurrenceRule, excludedDates, originalEventId, originalInstanceTime)
+      val recurrenceDates = pigeonVar_list[13] as List<Long>?
+      val originalEventId = pigeonVar_list[14] as String?
+      val originalInstanceTime = pigeonVar_list[15] as Long?
+      return Event(id, calendarId, title, isAllDay, startDate, endDate, reminders, attendees, description, url, location, recurrenceRule, excludedDates, recurrenceDates, originalEventId, originalInstanceTime)
     }
   }
   fun toList(): List<Any?> {
@@ -318,6 +320,7 @@ data class Event (
       location,
       recurrenceRule,
       excludedDates,
+      recurrenceDates,
       originalEventId,
       originalInstanceTime,
     )
@@ -330,7 +333,7 @@ data class Event (
       return true
     }
     val other = other as Event
-    return CalendarApiPigeonUtils.deepEquals(this.id, other.id) && CalendarApiPigeonUtils.deepEquals(this.calendarId, other.calendarId) && CalendarApiPigeonUtils.deepEquals(this.title, other.title) && CalendarApiPigeonUtils.deepEquals(this.isAllDay, other.isAllDay) && CalendarApiPigeonUtils.deepEquals(this.startDate, other.startDate) && CalendarApiPigeonUtils.deepEquals(this.endDate, other.endDate) && CalendarApiPigeonUtils.deepEquals(this.reminders, other.reminders) && CalendarApiPigeonUtils.deepEquals(this.attendees, other.attendees) && CalendarApiPigeonUtils.deepEquals(this.description, other.description) && CalendarApiPigeonUtils.deepEquals(this.url, other.url) && CalendarApiPigeonUtils.deepEquals(this.location, other.location) && CalendarApiPigeonUtils.deepEquals(this.recurrenceRule, other.recurrenceRule) && CalendarApiPigeonUtils.deepEquals(this.excludedDates, other.excludedDates) && CalendarApiPigeonUtils.deepEquals(this.originalEventId, other.originalEventId) && CalendarApiPigeonUtils.deepEquals(this.originalInstanceTime, other.originalInstanceTime)
+    return CalendarApiPigeonUtils.deepEquals(this.id, other.id) && CalendarApiPigeonUtils.deepEquals(this.calendarId, other.calendarId) && CalendarApiPigeonUtils.deepEquals(this.title, other.title) && CalendarApiPigeonUtils.deepEquals(this.isAllDay, other.isAllDay) && CalendarApiPigeonUtils.deepEquals(this.startDate, other.startDate) && CalendarApiPigeonUtils.deepEquals(this.endDate, other.endDate) && CalendarApiPigeonUtils.deepEquals(this.reminders, other.reminders) && CalendarApiPigeonUtils.deepEquals(this.attendees, other.attendees) && CalendarApiPigeonUtils.deepEquals(this.description, other.description) && CalendarApiPigeonUtils.deepEquals(this.url, other.url) && CalendarApiPigeonUtils.deepEquals(this.location, other.location) && CalendarApiPigeonUtils.deepEquals(this.recurrenceRule, other.recurrenceRule) && CalendarApiPigeonUtils.deepEquals(this.excludedDates, other.excludedDates) && CalendarApiPigeonUtils.deepEquals(this.recurrenceDates, other.recurrenceDates) && CalendarApiPigeonUtils.deepEquals(this.originalEventId, other.originalEventId) && CalendarApiPigeonUtils.deepEquals(this.originalInstanceTime, other.originalInstanceTime)
   }
 
   override fun hashCode(): Int {
@@ -348,6 +351,7 @@ data class Event (
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.location)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.recurrenceRule)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.excludedDates)
+    result = 31 * result + CalendarApiPigeonUtils.deepHash(this.recurrenceDates)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.originalEventId)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.originalInstanceTime)
     return result
@@ -510,9 +514,9 @@ interface CalendarApi {
   fun retrieveCalendars(onlyWritableCalendars: Boolean, account: Account?, callback: (Result<List<Calendar>>) -> Unit)
   fun retrieveAccounts(callback: (Result<List<Account>>) -> Unit)
   fun deleteCalendar(calendarId: String, callback: (Result<Unit>) -> Unit)
-  fun createEvent(calendarId: String, title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Event>) -> Unit)
-  fun createEventInDefaultCalendar(title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Unit>) -> Unit)
-  fun createEventThroughNativePlatform(title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Unit>) -> Unit)
+  fun createEvent(calendarId: String, title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, recurrenceDates: List<Long>?, callback: (Result<Event>) -> Unit)
+  fun createEventInDefaultCalendar(title: String, startDate: Long, endDate: Long, isAllDay: Boolean, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, recurrenceDates: List<Long>?, callback: (Result<Unit>) -> Unit)
+  fun createEventThroughNativePlatform(title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, recurrenceDates: List<Long>?, callback: (Result<Unit>) -> Unit)
   /**
    * Updates an existing event. All optional field params follow
    * null-means-unchanged semantics; pass `""` to clear a string field.
@@ -530,7 +534,7 @@ interface CalendarApi {
    * `occurrenceTimeUtcMs` is required for `thisEvent` and `thisAndFuture`;
    * ignored for `allEvents`.
    */
-  fun updateEvent(eventId: String, span: UpdateSpan, occurrenceTimeUtcMs: Long?, title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, callback: (Result<Event>) -> Unit)
+  fun updateEvent(eventId: String, span: UpdateSpan, occurrenceTimeUtcMs: Long?, title: String?, startDate: Long?, endDate: Long?, isAllDay: Boolean?, description: String?, url: String?, location: String?, reminders: List<Long>?, recurrenceRule: String?, excludedDates: List<Long>?, recurrenceDates: List<Long>?, callback: (Result<Event>) -> Unit)
   fun retrieveEvents(calendarId: String, startDate: Long, endDate: Long, expandRecurring: Boolean, callback: (Result<List<Event>>) -> Unit)
   fun deleteEvent(eventId: String, callback: (Result<Unit>) -> Unit)
   fun createReminder(reminder: Long, eventId: String, callback: (Result<Event>) -> Unit)
@@ -643,7 +647,8 @@ interface CalendarApi {
             val remindersArg = args[8] as List<Long>?
             val recurrenceRuleArg = args[9] as String?
             val excludedDatesArg = args[10] as List<Long>?
-            api.createEvent(calendarIdArg, titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg) { result: Result<Event> ->
+            val recurrenceDatesArg = args[11] as List<Long>?
+            api.createEvent(calendarIdArg, titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg, recurrenceDatesArg) { result: Result<Event> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(CalendarApiPigeonUtils.wrapError(error))
@@ -672,7 +677,8 @@ interface CalendarApi {
             val remindersArg = args[7] as List<Long>?
             val recurrenceRuleArg = args[8] as String?
             val excludedDatesArg = args[9] as List<Long>?
-            api.createEventInDefaultCalendar(titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg) { result: Result<Unit> ->
+            val recurrenceDatesArg = args[10] as List<Long>?
+            api.createEventInDefaultCalendar(titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg, recurrenceDatesArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(CalendarApiPigeonUtils.wrapError(error))
@@ -700,7 +706,8 @@ interface CalendarApi {
             val remindersArg = args[7] as List<Long>?
             val recurrenceRuleArg = args[8] as String?
             val excludedDatesArg = args[9] as List<Long>?
-            api.createEventThroughNativePlatform(titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg) { result: Result<Unit> ->
+            val recurrenceDatesArg = args[10] as List<Long>?
+            api.createEventThroughNativePlatform(titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg, recurrenceDatesArg) { result: Result<Unit> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(CalendarApiPigeonUtils.wrapError(error))
@@ -731,7 +738,8 @@ interface CalendarApi {
             val remindersArg = args[10] as List<Long>?
             val recurrenceRuleArg = args[11] as String?
             val excludedDatesArg = args[12] as List<Long>?
-            api.updateEvent(eventIdArg, spanArg, occurrenceTimeUtcMsArg, titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg) { result: Result<Event> ->
+            val recurrenceDatesArg = args[13] as List<Long>?
+            api.updateEvent(eventIdArg, spanArg, occurrenceTimeUtcMsArg, titleArg, startDateArg, endDateArg, isAllDayArg, descriptionArg, urlArg, locationArg, remindersArg, recurrenceRuleArg, excludedDatesArg, recurrenceDatesArg) { result: Result<Event> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(CalendarApiPigeonUtils.wrapError(error))
