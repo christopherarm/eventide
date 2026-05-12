@@ -295,21 +295,38 @@ public enum RecurrenceRuleParser {
 
     /// Parses `BYDAY=MO,WE,FR` (Phase 1) or `BYDAY=1FR,-1MO` (Phase 2 positional).
     /// EventKit's weekNumber=0 means "any occurrence of this weekday".
+    /// RFC 5545 allows ordwk in [-53,-1] ∪ [1,53]; we accept the same range.
     private static func parseByDay(_ s: String?) throws -> [EKRecurrenceDayOfWeek]? {
         guard let s = s, !s.isEmpty else { return nil }
         var result: [EKRecurrenceDayOfWeek] = []
         for raw in s.split(separator: ",") {
             let token = String(raw).trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            // Detect positional prefix: optional sign + digits + 2-letter weekday
-            if token.count > 2 {
-                throw RecurrenceRuleParserError.unsupportedFeature(
-                    "Positional BYDAY (\(token)) — Phase 2"
-                )
-            }
-            guard let weekday = weekdayMap[token] else {
+            let nsToken = token as NSString
+            let range = NSRange(location: 0, length: nsToken.length)
+            guard let match = byDayTokenPattern.firstMatch(in: token, options: [], range: range) else {
                 throw RecurrenceRuleParserError.invalidRRule("Unknown BYDAY token: \(token)")
             }
-            result.append(EKRecurrenceDayOfWeek(dayOfTheWeek: weekday, weekNumber: 0))
+            let weekdayCode = nsToken.substring(with: match.range(at: 2))
+            guard let weekday = weekdayMap[weekdayCode] else {
+                throw RecurrenceRuleParserError.invalidRRule("Unknown BYDAY weekday: \(weekdayCode)")
+            }
+            let weekNumberRange = match.range(at: 1)
+            let weekNumber: Int
+            if weekNumberRange.location != NSNotFound {
+                let prefix = nsToken.substring(with: weekNumberRange)
+                guard let parsed = Int(prefix) else {
+                    throw RecurrenceRuleParserError.invalidRRule("Invalid BYDAY week offset: \(prefix)")
+                }
+                if parsed == 0 || parsed < -53 || parsed > 53 {
+                    throw RecurrenceRuleParserError.invalidRRule(
+                        "BYDAY week offset must be in [-53,-1] ∪ [1,53] (got: \(parsed))"
+                    )
+                }
+                weekNumber = parsed
+            } else {
+                weekNumber = 0
+            }
+            result.append(EKRecurrenceDayOfWeek(dayOfTheWeek: weekday, weekNumber: weekNumber))
         }
         return result.isEmpty ? nil : result
     }
