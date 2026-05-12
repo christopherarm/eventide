@@ -152,6 +152,14 @@ final class ETCalendar {
 /// [location] is the location of the event.
 ///
 /// [reminders] is a list of [Duration] before the event.
+///
+/// [recurrenceRule] is the RFC 5545 RRULE string (no `RRULE:` prefix), e.g.
+/// `"FREQ=WEEKLY;BYDAY=MO,WE,FR"`. Null for single events.
+///
+/// [excludedDates] are dates where the recurring event should NOT occur
+/// (RFC 5545 EXDATE). Empty for events with no exceptions. On iOS Phase 1
+/// this is always empty on read because EventKit has no public EXDATE
+/// accessor; on Android it round-trips fully.
 final class ETEvent {
   final String id;
   final String title;
@@ -164,6 +172,8 @@ final class ETEvent {
   final String? description;
   final String? url;
   final String? location;
+  final String? recurrenceRule;
+  final Iterable<DateTime> excludedDates;
 
   @override
   int get hashCode => Object.hashAll([
@@ -178,6 +188,8 @@ final class ETEvent {
     description,
     url,
     location,
+    recurrenceRule,
+    ...excludedDates,
   ]);
 
   const ETEvent({
@@ -192,6 +204,8 @@ final class ETEvent {
     this.description,
     this.url,
     this.location,
+    this.recurrenceRule,
+    this.excludedDates = const [],
   });
 
   @override
@@ -209,7 +223,9 @@ final class ETEvent {
           listEquals(List.from(other.reminders), List.from(reminders)) &&
           other.description == description &&
           other.url == url &&
-          other.location == location;
+          other.location == location &&
+          other.recurrenceRule == recurrenceRule &&
+          listEquals(List.from(other.excludedDates), List.from(excludedDates));
 }
 
 /// Represents an account.

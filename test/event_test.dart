@@ -38,6 +38,8 @@ void main() {
     location: null,
     reminders: [],
     attendees: [],
+    recurrenceRule: null,
+    excludedDates: null,
   );
 
   setUpAll(() {
@@ -55,6 +57,8 @@ void main() {
       calendarId: '1',
       reminders: [],
       attendees: [],
+      recurrenceRule: null,
+      excludedDates: null,
     );
 
     when(
@@ -68,6 +72,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -93,6 +99,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).called(1);
   });
@@ -109,6 +117,8 @@ void main() {
       location: '1 Place Bellecour, 69002 Lyon',
       reminders: [],
       attendees: [],
+      recurrenceRule: null,
+      excludedDates: null,
     );
 
     when(
@@ -122,6 +132,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -147,6 +159,8 @@ void main() {
         url: any(named: 'url'),
         location: '1 Place Bellecour, 69002 Lyon',
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).called(1);
   });
@@ -164,6 +178,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenThrow(ETGenericException(message: 'API Error'));
 
@@ -184,6 +200,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).called(1);
   });
@@ -201,6 +219,8 @@ void main() {
       url: 'http://test.com',
       reminders: [],
       attendees: [],
+      recurrenceRule: null,
+      excludedDates: null,
     );
 
     when(
@@ -213,6 +233,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -236,6 +258,8 @@ void main() {
         url: 'http://test.com',
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -251,6 +275,8 @@ void main() {
       calendarId: 'default',
       reminders: [],
       attendees: [],
+      recurrenceRule: null,
+      excludedDates: null,
     );
 
     when(
@@ -263,6 +289,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async => event);
 
@@ -285,6 +313,8 @@ void main() {
         url: null,
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -301,6 +331,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenThrow(ETGenericException(message: 'API Error'));
 
@@ -320,6 +352,8 @@ void main() {
         url: null,
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -345,6 +379,8 @@ void main() {
         calendarId: 'default',
         reminders: [],
         attendees: [],
+        recurrenceRule: null,
+        excludedDates: null,
       );
 
       when(
@@ -357,6 +393,8 @@ void main() {
           url: any(named: 'url'),
           location: any(named: 'location'),
           reminders: any(named: 'reminders'),
+        recurrenceRule: any(named: 'recurrenceRule'),
+        excludedDates: any(named: 'excludedDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -382,6 +420,8 @@ void main() {
           url: null,
           location: null,
           reminders: [10 * 60, 20 * 60],
+          recurrenceRule: null,
+          excludedDates: null,
         ),
       ).called(1);
     });
@@ -410,6 +450,8 @@ void main() {
           url: any(named: 'url'),
           location: any(named: 'location'),
           reminders: any(named: 'reminders'),
+        recurrenceRule: any(named: 'recurrenceRule'),
+        excludedDates: any(named: 'excludedDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -438,6 +480,8 @@ void main() {
           url: any(named: 'url'),
           location: any(named: 'location'),
           reminders: [10, 20],
+          recurrenceRule: null,
+          excludedDates: null,
         ),
       ).called(1);
     });
@@ -467,6 +511,8 @@ void main() {
           url: any(named: 'url'),
           location: any(named: 'location'),
           reminders: any(named: 'reminders'),
+        recurrenceRule: any(named: 'recurrenceRule'),
+        excludedDates: any(named: 'excludedDates'),
         ),
       ).thenAnswer((_) async => event);
       when(
@@ -492,6 +538,8 @@ void main() {
           url: null,
           location: null,
           reminders: [10, 20],
+          recurrenceRule: null,
+          excludedDates: null,
         ),
       ).called(1);
     });
@@ -509,6 +557,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async {});
 
@@ -534,6 +584,8 @@ void main() {
         url: 'http://test.com',
         location: null,
         reminders: [10],
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -550,6 +602,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async {});
 
@@ -567,6 +621,8 @@ void main() {
         url: null,
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -585,6 +641,8 @@ void main() {
           url: any(named: 'url'),
           location: any(named: 'location'),
           reminders: any(named: 'reminders'),
+        recurrenceRule: any(named: 'recurrenceRule'),
+        excludedDates: any(named: 'excludedDates'),
         ),
       ).thenThrow(ETPresentationException(message: 'Presentation Error'));
 
@@ -604,6 +662,8 @@ void main() {
           url: null,
           location: null,
           reminders: null,
+        recurrenceRule: null,
+        excludedDates: null,
         ),
       ).called(1);
     },
@@ -621,6 +681,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenThrow(ETUserCanceledException(message: 'User Cancelled'));
 
@@ -640,6 +702,8 @@ void main() {
         url: null,
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -652,6 +716,7 @@ void main() {
         calendarId: any(named: 'calendarId'),
         startDate: any(named: 'startDate'),
         endDate: any(named: 'endDate'),
+      expandRecurring: any(named: 'expandRecurring'),
       ),
     ).thenAnswer((_) async => [event.copyWithReminders(reminders.toNativeList())]);
 
@@ -665,6 +730,7 @@ void main() {
         calendarId: '1',
         startDate: any(named: 'startDate'),
         endDate: any(named: 'endDate'),
+      expandRecurring: any(named: 'expandRecurring'),
       ),
     ).called(1);
   });
@@ -698,6 +764,8 @@ void main() {
         url: any(named: 'url'),
         location: any(named: 'location'),
         reminders: any(named: 'reminders'),
+      recurrenceRule: any(named: 'recurrenceRule'),
+      excludedDates: any(named: 'excludedDates'),
       ),
     ).thenAnswer((_) async => mockEvent);
 
@@ -719,6 +787,8 @@ void main() {
         url: null,
         location: null,
         reminders: null,
+      recurrenceRule: null,
+      excludedDates: null,
       ),
     ).called(1);
   });
@@ -736,6 +806,8 @@ void main() {
         url: 'http://test.com',
         reminders: [10, 20],
         attendees: [],
+        recurrenceRule: null,
+        excludedDates: null,
       );
       final etEvent = event.toETEvent();
       expect(etEvent.id, '1');
@@ -762,6 +834,8 @@ void main() {
         location: '1 Place Bellecour, 69002 Lyon',
         reminders: [10, 20],
         attendees: [],
+        recurrenceRule: null,
+        excludedDates: null,
       );
       final etEvent = event.toETEvent();
       expect(etEvent.location, '1 Place Bellecour, 69002 Lyon');
@@ -780,6 +854,8 @@ void main() {
           url: 'http://test.com',
           reminders: [10, 20],
           attendees: [],
+          recurrenceRule: null,
+          excludedDates: null,
         ),
       ];
       final etEvents = events.toETEventList();
@@ -821,6 +897,8 @@ extension on Event {
       location: location,
       reminders: reminders.toList(growable: false),
       attendees: [],
+      recurrenceRule: null,
+      excludedDates: null,
     );
   }
 }

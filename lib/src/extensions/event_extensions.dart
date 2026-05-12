@@ -17,6 +17,11 @@ extension EventToETEvent on Event {
       location: location,
       reminders: reminders.toDurationList(),
       attendees: attendees.toETAttendeeList(),
+      recurrenceRule: recurrenceRule,
+      excludedDates: excludedDates
+              ?.map((ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true))
+              .toList() ??
+          const [],
     );
   }
 }
@@ -35,6 +40,8 @@ extension ETEventCopy on ETEvent {
       location: location,
       reminders: reminders ?? this.reminders,
       attendees: attendees,
+      recurrenceRule: recurrenceRule,
+      excludedDates: excludedDates,
     );
   }
 }
