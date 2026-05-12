@@ -120,10 +120,11 @@ final class EasyEventStore: EasyEventStoreProtocol {
         recurrenceRule: String?,
         excludedDates: [Int64]?
     ) throws -> Event {
-        // Phase 1: recurrenceRule/excludedDates accepted in signature but not yet
-        // applied to ekEvent. Wired in Step H once RecurrenceRuleParser is implemented.
-        _ = recurrenceRule
+        // Phase 1 iOS EXDATE limitation: EventKit has no public EXDATE accessor,
+        // so excludedDates is accepted but not applied — detached-occurrence
+        // semantics are Phase 2 (plan AD-3).
         _ = excludedDates
+
         let ekEvent = EKEvent(eventStore: eventStore)
 
         guard let ekCalendar = eventStore.calendar(withIdentifier: calendarId) else {
@@ -146,6 +147,19 @@ final class EasyEventStore: EasyEventStoreProtocol {
 
         if url != nil {
             ekEvent.url = URL(string: url!)
+        }
+
+        if let rruleStr = recurrenceRule {
+            do {
+                let rule = try RecurrenceRuleParser.parse(rrule: rruleStr, dtstart: startDate)
+                ekEvent.recurrenceRules = [rule]
+            } catch let err as RecurrenceRuleParserError {
+                throw PigeonError(
+                    code: "INVALID_RRULE",
+                    message: "Failed to parse recurrenceRule",
+                    details: "\(err)"
+                )
+            }
         }
 
         do {
@@ -174,9 +188,9 @@ final class EasyEventStore: EasyEventStoreProtocol {
         recurrenceRule: String?,
         excludedDates: [Int64]?
     ) throws {
-        // Phase 1: recurrenceRule/excludedDates accepted but not yet applied.
-        _ = recurrenceRule
+        // Phase 1: excludedDates not yet applied on default-calendar create path.
         _ = excludedDates
+
         let ekEvent = EKEvent(eventStore: eventStore)
 
         ekEvent.calendar = eventStore.defaultCalendarForNewEvents
@@ -193,6 +207,19 @@ final class EasyEventStore: EasyEventStoreProtocol {
             ekEvent.url = URL(string: url!)
         }
 
+        if let rruleStr = recurrenceRule {
+            do {
+                let rule = try RecurrenceRuleParser.parse(rrule: rruleStr, dtstart: startDate)
+                ekEvent.recurrenceRules = [rule]
+            } catch let err as RecurrenceRuleParserError {
+                throw PigeonError(
+                    code: "INVALID_RRULE",
+                    message: "Failed to parse recurrenceRule",
+                    details: "\(err)"
+                )
+            }
+        }
+
         do {
             try eventStore.save(ekEvent, span: EKSpan.thisEvent, commit: true)
 
@@ -205,7 +232,7 @@ final class EasyEventStore: EasyEventStoreProtocol {
             )
         }
     }
-    
+
     func presentEventCreationViewController(
         title: String?,
         startDate: Date?,
@@ -231,8 +258,6 @@ final class EasyEventStore: EasyEventStoreProtocol {
     }
     
     func retrieveEvents(calendarId: String, startDate: Date, endDate: Date, expandRecurring: Bool) throws -> [Event] {
-        // Phase 1: expandRecurring accepted in signature; dedup wiring lands in Step H.
-        _ = expandRecurring
         guard let calendar = eventStore.calendar(withIdentifier: calendarId) else {
             throw PigeonError(
                 code: "NOT_FOUND",
@@ -240,14 +265,31 @@ final class EasyEventStore: EasyEventStoreProtocol {
                 details: "The provided calendar.id is certainly incorrect"
             )
         }
-        
+
         let predicate = eventStore.predicateForEvents(
             withStart: startDate,
             end: endDate,
             calendars: [calendar]
         )
-        
-        return eventStore.events(matching: predicate).map { $0.toEvent() }
+
+        let rawEvents = eventStore.events(matching: predicate)
+        if expandRecurring {
+            return rawEvents.map { $0.toEvent() }
+        }
+
+        // Master-only mode (plan AD-1 default): predicateForEvents auto-expands
+        // recurring occurrences, so we dedupe by calendarItemIdentifier — all
+        // occurrences of a series share the master's identifier, while detached
+        // occurrences (Phase 2) carry their own. The first occurrence wins.
+        var seenIdentifiers = Set<String>()
+        var deduped: [EKEvent] = []
+        for ekEvent in rawEvents {
+            let identifier = ekEvent.calendarItemIdentifier
+            if seenIdentifiers.insert(identifier).inserted {
+                deduped.append(ekEvent)
+            }
+        }
+        return deduped.map { $0.toEvent() }
     }
     
     func deleteEvent(eventId: String) throws {
@@ -432,8 +474,8 @@ fileprivate extension EKEvent {
             description: notes,
             url: url?.absoluteString,
             location: location,
-            recurrenceRule: nil,   // Phase 1: surfaced in Step H once parser+serializer land
-            excludedDates: nil     // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
+            recurrenceRule: recurrenceRules?.first.flatMap { try? RecurrenceRuleParser.serialize($0) },
+            excludedDates: nil  // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
         )
     }
 }

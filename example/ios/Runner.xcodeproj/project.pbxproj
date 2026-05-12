@@ -18,6 +18,7 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		E6E443D0CB000893A40B1335 /* RecurrenceIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7479371C6EF731C364B793E6 /* RecurrenceIntegrationTests.swift */; };
 		EA12C08B2EF02CE1003C6FE5 /* AccountTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA12C08A2EF02CE1003C6FE5 /* AccountTests.swift */; };
 		EA56FDFB2E9F961200FB6529 /* AttendeeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA56FDFA2E9F961200FB6529 /* AttendeeTests.swift */; };
 		EA5CD6CC2D8C99F2004CFD37 /* UtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAECB9432D395CA3000FAA80 /* UtilsTests.swift */; };
@@ -56,6 +57,7 @@
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		313CEF73088C0A1B29D63A2C /* RecurrenceRuleParserTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecurrenceRuleParserTests.swift; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		7479371C6EF731C364B793E6 /* RecurrenceIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecurrenceIntegrationTests.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7A15AC955CC60E74679B0E36 /* Pods_EventideTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_EventideTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -189,6 +191,7 @@
 				EAECB9432D395CA3000FAA80 /* UtilsTests.swift */,
 				313CEF73088C0A1B29D63A2C /* RecurrenceRuleParserTests.swift */,
 				864A3D06F21DF3488F39F508 /* RecurrenceRuleRoundtripTests.swift */,
+				7479371C6EF731C364B793E6 /* RecurrenceIntegrationTests.swift */,
 			);
 			path = EventideTests;
 			sourceTree = "<group>";
@@ -432,6 +435,7 @@
 				EA8AABCD2D8D889600A1D69B /* CalendarTests.swift in Sources */,
 				5D7F0208F9EA9B95164426FC /* RecurrenceRuleParserTests.swift in Sources */,
 				37B441AF1290EE27D1175647 /* RecurrenceRuleRoundtripTests.swift in Sources */,
+				E6E443D0CB000893A40B1335 /* RecurrenceIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
