@@ -6,7 +6,23 @@
 * 4 previously-red parser tests turn green: `test_rfc_monthlyFirstFriday`, `test_rfc_monthlyLastFriday`, `test_rfc_monthlySecondToLastMonday`, `test_gcal_monthlySecondThursday`.
 * 4 new round-trip tests in `RecurrenceRuleRoundtripTests.swift` plus an inverted serializer assertion (`test_serialize_emits_positionalByDay`).
 * 3 new Android validator acceptance tests guard the lenient-by-design behavior.
-* iOS suite: 108 green / 4 red (the remaining 4 are Phase 2B BYSETPOS + 2C WKST).
+
+### Added — RRULE Phase 2B (BYSETPOS)
+* iOS parser handles `BYSETPOS=3,-1` (multi-value, range `[-366,-1] ∪ [1,366]`) and enforces RFC 5545 §3.3.10 (must accompany another BY-rule).
+* iOS serializer emits BYSETPOS after BYDAY in canonical order.
+* 2 previously-red parser tests turn green: `test_rfc_thirdInstanceTueWedThu`, `test_rfc_lastWorkdayOfMonth`.
+* 3 new round-trip / direct-serialize tests; refusal test inverted.
+
+### Added — RRULE Phase 2C (WKST)
+* iOS parser maps `WKST=SU..SA` to `EKRecurrenceRule.firstDayOfTheWeek` via KVC (the property is get-only since iOS 16; the ObjC setter remains reachable).
+* iOS serializer emits `WKST` after `BYSETPOS`, omitting when value is 0 (unset) or 2 (Monday, RFC default).
+* 2 previously-red parser tests turn green: `test_rfc_weeklyTueThuUntil`, `test_edge_wkstSundayShiftsWeekBoundary`.
+* 2 new round-trip tests + 2 new Android validator regression tests.
+
+### Test state after Phase 2A + 2B + 2C
+* iOS: **112 green / 0 red** (all 8 originally-red Phase 2 tests now green).
+* Android: 25 validator tests green.
+* The remaining Phase 2 / Phase 3 work (`updateEvent`, detached occurrences, RDATE, reverse-sync, BYWEEKNO, BYYEARDAY) is tracked in `fam_bowl` issue #43.
 
 ## 2.2.0
 * **Definitive fix in `createEventInDefaultCalendar` & `createEventThroughNativePlatform` on Android :**: using ical format under the hood

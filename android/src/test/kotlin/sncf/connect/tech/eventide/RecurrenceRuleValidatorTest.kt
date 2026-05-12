@@ -64,8 +64,20 @@ class RecurrenceRuleValidatorTest {
     }
 
     @Test
+    fun `accepts BYSETPOS with positive value (Phase 2B)`() {
+        // Outlook export: 3rd Tue/Wed/Thu of the month.
+        assertOk("FREQ=MONTHLY;COUNT=3;BYDAY=TU,WE,TH;BYSETPOS=3")
+    }
+
+    @Test
     fun `accepts WKST (Phase 2 stored verbatim)`() {
         assertOk("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;WKST=SU")
+    }
+
+    @Test
+    fun `accepts WKST with UNTIL (Phase 2C)`() {
+        // Google emits WKST=SU on weekly multi-day rules.
+        assertOk("FREQ=WEEKLY;UNTIL=20261007T000000Z;WKST=SU;BYDAY=TU,TH")
     }
 
     @Test
