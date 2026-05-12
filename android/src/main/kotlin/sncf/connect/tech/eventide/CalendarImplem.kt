@@ -364,12 +364,6 @@ class CalendarImplem(
         excludedDates: List<Long>?,
         callback: (Result<Event>) -> Unit
     ) {
-        // Phase 1: recurrenceRule/excludedDates accepted in signature; persistence
-        // wired in Step J once Validator and DURATION/DTEND swap land.
-        @Suppress("UNUSED_VARIABLE")
-        val phase1RruleStub = recurrenceRule
-        @Suppress("UNUSED_VARIABLE")
-        val phase1ExdateStub = excludedDates
         permissionHandler.requestWritePermission { granted ->
             if (!granted) {
                 callback(
@@ -381,6 +375,24 @@ class CalendarImplem(
                     )
                 )
                 return@requestWritePermission
+            }
+
+            // Validate RRULE before any DB work — fail fast with clear error
+            // rather than letting CalendarProvider silently accept garbage.
+            if (recurrenceRule != null) {
+                val v = RecurrenceRuleValidator.validate(recurrenceRule)
+                if (v is RecurrenceRuleValidator.Result.Invalid) {
+                    callback(
+                        Result.failure(
+                            FlutterError(
+                                code = "INVALID_RRULE",
+                                message = "Invalid recurrenceRule",
+                                details = v.reason,
+                            )
+                        )
+                    )
+                    return@requestWritePermission
+                }
             }
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -395,9 +407,23 @@ class CalendarImplem(
                             put(CalendarContract.Events.DESCRIPTION, mergedDescription)
                             put(CalendarContract.Events.EVENT_LOCATION, location)
                             put(CalendarContract.Events.DTSTART, startDate)
-                            put(CalendarContract.Events.DTEND, endDate)
                             put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
                             put(CalendarContract.Events.ALL_DAY, isAllDay.toInt())
+                        }
+                        // Android schema constraint: recurring events MUST use DURATION,
+                        // not DTEND. Plan-research finding #2.
+                        if (recurrenceRule != null) {
+                            val durationSec = (endDate - startDate) / 1000L
+                            eventValues.put(CalendarContract.Events.DURATION, "PT${durationSec}S")
+                            eventValues.put(CalendarContract.Events.RRULE, recurrenceRule)
+                            if (!excludedDates.isNullOrEmpty()) {
+                                eventValues.put(
+                                    CalendarContract.Events.EXDATE,
+                                    excludedDates.joinToString(",") { formatExdateUtc(it) }
+                                )
+                            }
+                        } else {
+                            eventValues.put(CalendarContract.Events.DTEND, endDate)
                         }
 
                         val eventUri = contentResolver.insert(eventContentUri, eventValues)
@@ -431,8 +457,8 @@ class CalendarImplem(
                                     isAllDay = isAllDay,
                                     reminders = reminders ?: emptyList(),
                                     attendees = emptyList(),
-                                    recurrenceRule = null,
-                                    excludedDates = null,
+                                    recurrenceRule = recurrenceRule,
+                                    excludedDates = excludedDates,
                                 )
                                 callback(Result.success(event))
                             } else {
@@ -536,7 +562,10 @@ class CalendarImplem(
         expandRecurring: Boolean,
         callback: (Result<List<Event>>) -> Unit
     ) {
-        // Phase 1: expandRecurring accepted; Step K rewrites WHERE clause and projection.
+        // Phase 1: when expandRecurring=true the caller wants flattened
+        // occurrences (the old CalendarContract.Instances behaviour). We do
+        // not implement that yet — the default master-only path covers the
+        // primary Homzie use case. Document and continue.
         @Suppress("UNUSED_VARIABLE") val phase1ExpandStub = expandRecurring
         permissionHandler.requestReadPermission { granted ->
             if (!granted) {
@@ -562,10 +591,23 @@ class CalendarImplem(
                         CalendarContract.Events.DTEND,
                         CalendarContract.Events.EVENT_TIMEZONE,
                         CalendarContract.Events.ALL_DAY,
+                        CalendarContract.Events.RRULE,
+                        CalendarContract.Events.EXDATE,
+                        CalendarContract.Events.DURATION,
+                        CalendarContract.Events.LAST_DATE,
+                        CalendarContract.Events.ORIGINAL_ID,
                     )
+                    // Overlap query (plan AD-2): match series that intersect the
+                    // window rather than series whose DTSTART falls inside it.
+                    //   - DTSTART <= windowEnd      (series begins before window ends)
+                    //   - LAST_DATE NULL OR >= windowStart   (series still active)
+                    //   - ORIGINAL_ID IS NULL        (exclude detached exception children — Phase 2)
                     val selection =
-                        CalendarContract.Events.CALENDAR_ID + " = ? AND " + CalendarContract.Events.DTSTART + " >= ? AND " + CalendarContract.Events.DTEND + " <= ?"
-                    val selectionArgs = arrayOf(calendarId, startDate.toString(), endDate.toString())
+                        "${CalendarContract.Events.CALENDAR_ID} = ? " +
+                        "AND ${CalendarContract.Events.DTSTART} <= ? " +
+                        "AND (${CalendarContract.Events.LAST_DATE} IS NULL OR ${CalendarContract.Events.LAST_DATE} >= ?) " +
+                        "AND ${CalendarContract.Events.ORIGINAL_ID} IS NULL"
+                    val selectionArgs = arrayOf(calendarId, endDate.toString(), startDate.toString())
 
                     val cursor = contentResolver.query(eventContentUri, projection, selection, selectionArgs, null)
                     val events = mutableListOf<Event>()
@@ -580,7 +622,20 @@ class CalendarImplem(
                             val (parsedDescription, parsedUrl) = descriptionUrlHelper.splitDescriptionAndUrl(storedDescription)
                             val eventLocation = c.getString(c.getColumnIndexOrThrow(CalendarContract.Events.EVENT_LOCATION))
                             val start = c.getLong(c.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
-                            val end = c.getLong(c.getColumnIndexOrThrow(CalendarContract.Events.DTEND))
+                            val rruleIdx = c.getColumnIndexOrThrow(CalendarContract.Events.RRULE)
+                            val rrule = if (c.isNull(rruleIdx)) null else c.getString(rruleIdx)
+                            val exdateIdx = c.getColumnIndexOrThrow(CalendarContract.Events.EXDATE)
+                            val exdateRaw = if (c.isNull(exdateIdx)) null else c.getString(exdateIdx)
+                            val durationIdx = c.getColumnIndexOrThrow(CalendarContract.Events.DURATION)
+                            val duration = if (c.isNull(durationIdx)) null else c.getString(durationIdx)
+                            // Recurring rows store DURATION instead of DTEND; compute first-occurrence end.
+                            val end = if (rrule != null && duration != null) {
+                                start + parseDurationToMs(duration)
+                            } else {
+                                val dtendIdx = c.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                                if (c.isNull(dtendIdx)) start else c.getLong(dtendIdx)
+                            }
+                            val excludedDates = exdateRaw?.let { parseExdateList(it) } ?: emptyList()
                             val isAllDay = c.getInt(c.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)).toBoolean()
 
                             val attendees = mutableListOf<Attendee>()
@@ -623,8 +678,8 @@ class CalendarImplem(
                                     isAllDay = isAllDay,
                                     reminders = reminders,
                                     attendees = attendees,
-                                    recurrenceRule = null,
-                                    excludedDates = null
+                                    recurrenceRule = rrule,
+                                    excludedDates = excludedDates,
                                 )
                             )
                         }
@@ -971,6 +1026,9 @@ class CalendarImplem(
                 CalendarContract.Events.EVENT_TIMEZONE,
                 CalendarContract.Events.CALENDAR_ID,
                 CalendarContract.Events.ALL_DAY,
+                CalendarContract.Events.RRULE,
+                CalendarContract.Events.EXDATE,
+                CalendarContract.Events.DURATION,
             )
             val selection = CalendarContract.Events._ID + " = ?"
             val selectionArgs = arrayOf(eventId)
@@ -988,7 +1046,19 @@ class CalendarImplem(
                     val eventLocation = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.EVENT_LOCATION))
                     val isAllDay = it.getInt(it.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)).toBoolean()
                     val startDate = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
-                    val endDate = it.getLong(it.getColumnIndexOrThrow(CalendarContract.Events.DTEND))
+                    val rruleIdx = it.getColumnIndexOrThrow(CalendarContract.Events.RRULE)
+                    val rrule = if (it.isNull(rruleIdx)) null else it.getString(rruleIdx)
+                    val exdateIdx = it.getColumnIndexOrThrow(CalendarContract.Events.EXDATE)
+                    val exdateRaw = if (it.isNull(exdateIdx)) null else it.getString(exdateIdx)
+                    val durationIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DURATION)
+                    val duration = if (it.isNull(durationIdx)) null else it.getString(durationIdx)
+                    val endDate = if (rrule != null && duration != null) {
+                        startDate + parseDurationToMs(duration)
+                    } else {
+                        val dtendIdx = it.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                        if (it.isNull(dtendIdx)) startDate else it.getLong(dtendIdx)
+                    }
+                    val excludedDates = exdateRaw?.let { parseExdateList(it) } ?: emptyList()
                     val calendarId = it.getString(it.getColumnIndexOrThrow(CalendarContract.Events.CALENDAR_ID))
 
                     val attendees = mutableListOf<Attendee>()
@@ -1030,8 +1100,8 @@ class CalendarImplem(
                         isAllDay = isAllDay,
                         reminders = reminders,
                         attendees = attendees,
-                        recurrenceRule = null,
-                        excludedDates = null
+                        recurrenceRule = rrule,
+                        excludedDates = excludedDates,
                     )
                 }
             }
@@ -1193,6 +1263,92 @@ class CalendarImplem(
                 )
             )
         }
+    }
+
+    // ------------------- RFC 5545 helpers (Phase 1) -------------------
+
+    /**
+     * Formats a ms-since-epoch instant as an RFC 5545 UTC date-time:
+     *   `20261001T120000Z`
+     */
+    internal fun formatExdateUtc(ms: Long): String {
+        val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+        cal.timeInMillis = ms
+        val y = cal.get(java.util.Calendar.YEAR)
+        val mo = cal.get(java.util.Calendar.MONTH) + 1
+        val d = cal.get(java.util.Calendar.DAY_OF_MONTH)
+        val h = cal.get(java.util.Calendar.HOUR_OF_DAY)
+        val mi = cal.get(java.util.Calendar.MINUTE)
+        val s = cal.get(java.util.Calendar.SECOND)
+        return "%04d%02d%02dT%02d%02d%02dZ".format(y, mo, d, h, mi, s)
+    }
+
+    /**
+     * Parses an RFC 5545 EXDATE column value (comma-separated UTC times) back
+     * into a list of ms-since-epoch instants. Tolerates Apple's date-only
+     * floating form (`YYYYMMDD`) per plan-research finding #1.
+     */
+    internal fun parseExdateList(raw: String): List<Long> {
+        val out = mutableListOf<Long>()
+        for (token in raw.split(",")) {
+            val t = token.trim()
+            if (t.isEmpty()) continue
+            val cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+            cal.clear()
+            when {
+                t.length == 8 -> { // YYYYMMDD
+                    cal.set(t.substring(0, 4).toInt(), t.substring(4, 6).toInt() - 1, t.substring(6, 8).toInt())
+                }
+                t.length == 15 || t.length == 16 -> { // YYYYMMDDTHHMMSS or with trailing Z
+                    cal.set(
+                        t.substring(0, 4).toInt(),
+                        t.substring(4, 6).toInt() - 1,
+                        t.substring(6, 8).toInt(),
+                        t.substring(9, 11).toInt(),
+                        t.substring(11, 13).toInt(),
+                        t.substring(13, 15).toInt(),
+                    )
+                }
+                else -> continue
+            }
+            out.add(cal.timeInMillis)
+        }
+        return out
+    }
+
+    /**
+     * Parses an ISO 8601 duration as stored in [CalendarContract.Events.DURATION]
+     * into milliseconds. Phase 1 supports the seconds form `PT<n>S`, which is
+     * what we emit on write. Day form `P<n>D` and week form `P<n>W` are also
+     * recognized for round-tripping foreign-written events.
+     */
+    internal fun parseDurationToMs(raw: String): Long {
+        val s = raw.trim().uppercase()
+        // PT...S form (seconds): handles "PT3600S", "PT1H30M", "PT45M"
+        if (s.startsWith("PT")) {
+            var totalSec = 0L
+            var num = StringBuilder()
+            for (i in 2 until s.length) {
+                val ch = s[i]
+                when {
+                    ch.isDigit() -> num.append(ch)
+                    ch == 'H' -> { totalSec += num.toString().toLong() * 3600L; num = StringBuilder() }
+                    ch == 'M' -> { totalSec += num.toString().toLong() * 60L; num = StringBuilder() }
+                    ch == 'S' -> { totalSec += num.toString().toLong(); num = StringBuilder() }
+                }
+            }
+            return totalSec * 1000L
+        }
+        // P...D / P...W
+        if (s.startsWith("P") && s.endsWith("D")) {
+            val days = s.substring(1, s.length - 1).toLong()
+            return days * 86_400_000L
+        }
+        if (s.startsWith("P") && s.endsWith("W")) {
+            val weeks = s.substring(1, s.length - 1).toLong()
+            return weeks * 7L * 86_400_000L
+        }
+        return 0L
     }
 }
 

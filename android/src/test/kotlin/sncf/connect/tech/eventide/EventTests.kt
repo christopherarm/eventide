@@ -125,7 +125,9 @@ class EventTests {
             description = "Description",
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -163,7 +165,9 @@ class EventTests {
             description = "Description",
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -191,7 +195,9 @@ class EventTests {
             description = "Description",
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -217,7 +223,9 @@ class EventTests {
             description = "Description",
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
         }
@@ -244,7 +252,9 @@ class EventTests {
             description = "Description",
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -266,7 +276,7 @@ class EventTests {
 
         var result: Result<List<Event>>? = null
         val latch = CountDownLatch(1)
-        calendarImplem.retrieveEvents("1", 0L, 0L) {
+        calendarImplem.retrieveEvents("1", 0L, 0L, expandRecurring = false) {
             result = it
             latch.countDown()
         }
@@ -282,7 +292,7 @@ class EventTests {
         mockPermissionDenied(permissionHandler)
 
         var result: Result<List<Event>>? = null
-        calendarImplem.retrieveEvents("1", 0L, 0L) {
+        calendarImplem.retrieveEvents("1", 0L, 0L, expandRecurring = false) {
             result = it
         }
 
@@ -300,7 +310,7 @@ class EventTests {
 
         var result: Result<List<Event>>? = null
         val latch = CountDownLatch(1)
-        calendarImplem.retrieveEvents("1", 0L, 0L) {
+        calendarImplem.retrieveEvents("1", 0L, 0L, expandRecurring = false) {
             result = it
             latch.countDown()
         }
@@ -319,7 +329,7 @@ class EventTests {
 
         var result: Result<List<Event>>? = null
         val latch = CountDownLatch(1)
-        calendarImplem.retrieveEvents("1", 0L, 0L) {
+        calendarImplem.retrieveEvents("1", 0L, 0L, expandRecurring = false) {
             result = it
             latch.countDown()
         }
@@ -445,7 +455,9 @@ class EventTests {
             description = "Test Description",
             url = "https://example.com",
             location = null,
-            reminders = emptyList()
+            reminders = emptyList(),
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -491,7 +503,9 @@ class EventTests {
             description = "All day description",
             url = "https://example.com",
             location = null,
-            reminders = listOf(10L, 30L)
+            reminders = listOf(10L, 30L),
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -537,7 +551,9 @@ class EventTests {
             description = null,
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -583,7 +599,9 @@ class EventTests {
             description = "Test Description",
             url = "https://example.com",
             location = null,
-            reminders = emptyList()
+            reminders = emptyList(),
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -629,7 +647,9 @@ class EventTests {
             description = "All day description",
             url = "https://example.com",
             location = null,
-            reminders = listOf(10L, 30L)
+            reminders = listOf(10L, 30L),
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
@@ -675,7 +695,9 @@ class EventTests {
             description = null,
             url = null,
             location = null,
-            reminders = null
+            reminders = null,
+            recurrenceRule = null,
+            excludedDates = null
         ) {
             result = it
             latch.countDown()
