@@ -35,6 +35,12 @@
 * Android: 123 green / 0 red.
 * Dart: 84 green / 0 red.
 
+### Added — Phase 2E (detached occurrences on read)
+* Pigeon `Event` gains `originalEventId` (String?) and `originalInstanceTime` (int? UTC ms) — non-null only for detached occurrences. ETEvent mirrors both, plus an `isDetached` convenience getter.
+* **iOS** (`EasyEventStore.retrieveEvents`): splits the predicate result into masters (deduped by `calendarItemIdentifier`) and detached events (`isDetached == true`). Each detached entry gets `originalEventId` resolved by preferring a shared `calendarItemExternalIdentifier` (the iCalendar UID, identical on CalDAV-synced calendars) with a fallback to the only master in the same calendar. `originalInstanceTime` is the detached event's startDate as a best-effort approximation — EventKit doesn't expose RECURRENCE-ID publicly.
+* **Android** (`CalendarImplem.retrieveEvents`): adds a second query after the master query that selects rows with `ORIGINAL_ID IN (master_ids)`, projecting `ORIGINAL_INSTANCE_TIME`. Full round-trip.
+* Tests: new iOS integration test (`test_retrieveEvents_surfacesDetachedOccurrenceWithOriginalEventId`) exercises create-master → detach-occurrence → retrieve → assert. Suite totals: iOS **128 / 0**, Android **130 / 0**, Dart **84 / 0**.
+
 ## 2.2.0
 * **Definitive fix in `createEventInDefaultCalendar` & `createEventThroughNativePlatform` on Android :**: using ical format under the hood
 
