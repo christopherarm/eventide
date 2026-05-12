@@ -252,6 +252,8 @@ struct Event: Hashable {
   var location: String? = nil
   var recurrenceRule: String? = nil
   var excludedDates: [Int64]? = nil
+  var originalEventId: String? = nil
+  var originalInstanceTime: Int64? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -269,6 +271,8 @@ struct Event: Hashable {
     let location: String? = nilOrValue(pigeonVar_list[10])
     let recurrenceRule: String? = nilOrValue(pigeonVar_list[11])
     let excludedDates: [Int64]? = nilOrValue(pigeonVar_list[12])
+    let originalEventId: String? = nilOrValue(pigeonVar_list[13])
+    let originalInstanceTime: Int64? = nilOrValue(pigeonVar_list[14])
 
     return Event(
       id: id,
@@ -283,7 +287,9 @@ struct Event: Hashable {
       url: url,
       location: location,
       recurrenceRule: recurrenceRule,
-      excludedDates: excludedDates
+      excludedDates: excludedDates,
+      originalEventId: originalEventId,
+      originalInstanceTime: originalInstanceTime
     )
   }
   func toList() -> [Any?] {
@@ -301,13 +307,15 @@ struct Event: Hashable {
       location,
       recurrenceRule,
       excludedDates,
+      originalEventId,
+      originalInstanceTime,
     ]
   }
   static func == (lhs: Event, rhs: Event) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsCalendarApi(lhs.id, rhs.id) && deepEqualsCalendarApi(lhs.calendarId, rhs.calendarId) && deepEqualsCalendarApi(lhs.title, rhs.title) && deepEqualsCalendarApi(lhs.isAllDay, rhs.isAllDay) && deepEqualsCalendarApi(lhs.startDate, rhs.startDate) && deepEqualsCalendarApi(lhs.endDate, rhs.endDate) && deepEqualsCalendarApi(lhs.reminders, rhs.reminders) && deepEqualsCalendarApi(lhs.attendees, rhs.attendees) && deepEqualsCalendarApi(lhs.description, rhs.description) && deepEqualsCalendarApi(lhs.url, rhs.url) && deepEqualsCalendarApi(lhs.location, rhs.location) && deepEqualsCalendarApi(lhs.recurrenceRule, rhs.recurrenceRule) && deepEqualsCalendarApi(lhs.excludedDates, rhs.excludedDates)
+    return deepEqualsCalendarApi(lhs.id, rhs.id) && deepEqualsCalendarApi(lhs.calendarId, rhs.calendarId) && deepEqualsCalendarApi(lhs.title, rhs.title) && deepEqualsCalendarApi(lhs.isAllDay, rhs.isAllDay) && deepEqualsCalendarApi(lhs.startDate, rhs.startDate) && deepEqualsCalendarApi(lhs.endDate, rhs.endDate) && deepEqualsCalendarApi(lhs.reminders, rhs.reminders) && deepEqualsCalendarApi(lhs.attendees, rhs.attendees) && deepEqualsCalendarApi(lhs.description, rhs.description) && deepEqualsCalendarApi(lhs.url, rhs.url) && deepEqualsCalendarApi(lhs.location, rhs.location) && deepEqualsCalendarApi(lhs.recurrenceRule, rhs.recurrenceRule) && deepEqualsCalendarApi(lhs.excludedDates, rhs.excludedDates) && deepEqualsCalendarApi(lhs.originalEventId, rhs.originalEventId) && deepEqualsCalendarApi(lhs.originalInstanceTime, rhs.originalInstanceTime)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -325,6 +333,8 @@ struct Event: Hashable {
     deepHashCalendarApi(value: location, hasher: &hasher)
     deepHashCalendarApi(value: recurrenceRule, hasher: &hasher)
     deepHashCalendarApi(value: excludedDates, hasher: &hasher)
+    deepHashCalendarApi(value: originalEventId, hasher: &hasher)
+    deepHashCalendarApi(value: originalInstanceTime, hasher: &hasher)
   }
 }
 

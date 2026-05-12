@@ -288,6 +288,49 @@ final class RecurrenceIntegrationTests: XCTestCase {
                        ".thisEvent span must not mutate the master")
     }
 
+    func test_retrieveEvents_surfacesDetachedOccurrenceWithOriginalEventId() throws {
+        let easyStore = EasyEventStore(eventStore: store)
+        let dtstart = iso("2026-09-07T09:00:00Z")  // Monday
+        let master = try easyStore.createEvent(
+            calendarId: testCalendar.calendarIdentifier,
+            title: "Weekly Sync", startDate: dtstart,
+            endDate: dtstart.addingTimeInterval(3600), isAllDay: false,
+            description: nil, url: nil, location: nil,
+            timeIntervals: nil,
+            recurrenceRule: "FREQ=WEEKLY;COUNT=5;BYDAY=MO",
+            excludedDates: nil
+        )
+
+        // Detach the 3rd occurrence (2026-09-21) to a new time.
+        let thirdOccurrence = iso("2026-09-21T09:00:00Z")
+        let newStart = iso("2026-09-21T11:00:00Z")
+        _ = try easyStore.updateEvent(
+            eventId: master.id, span: .thisEvent, occurrenceTime: thirdOccurrence,
+            title: "Detached Sync",
+            startDate: newStart,
+            endDate: newStart.addingTimeInterval(3600),
+            isAllDay: nil, description: nil, url: nil, location: nil,
+            timeIntervals: nil, recurrenceRule: nil, excludedDates: nil
+        )
+
+        // Retrieve over a window that includes the whole COUNT=5 series.
+        let windowEnd = dtstart.addingTimeInterval(86400 * 60)
+        let events = try easyStore.retrieveEvents(
+            calendarId: testCalendar.calendarIdentifier,
+            startDate: dtstart, endDate: windowEnd, expandRecurring: false
+        )
+
+        let detached = events.filter { $0.originalEventId != nil }
+        XCTAssertFalse(detached.isEmpty, "expected at least one detached occurrence")
+        // The detached entry must reference the master.
+        XCTAssertEqual(detached.first?.originalEventId, master.id,
+                       "detached.originalEventId should point at the master")
+        XCTAssertNotNil(detached.first?.originalInstanceTime,
+                        "detached.originalInstanceTime should be set (best-effort = startDate)")
+        // And the title carries the detached edit.
+        XCTAssertEqual(detached.first?.title, "Detached Sync")
+    }
+
     func test_updateEvent_thisAndFuture_terminatesAndContinues() throws {
         let easyStore = EasyEventStore(eventStore: store)
         let dtstart = iso("2026-09-07T09:00:00Z")

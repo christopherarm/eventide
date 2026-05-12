@@ -184,6 +184,8 @@ class Event {
     this.location,
     this.recurrenceRule,
     this.excludedDates,
+    this.originalEventId,
+    this.originalInstanceTime,
   });
 
   String id;
@@ -212,6 +214,10 @@ class Event {
 
   List<int>? excludedDates;
 
+  String? originalEventId;
+
+  int? originalInstanceTime;
+
   List<Object?> _toList() {
     return <Object?>[
       id,
@@ -227,6 +233,8 @@ class Event {
       location,
       recurrenceRule,
       excludedDates,
+      originalEventId,
+      originalInstanceTime,
     ];
   }
 
@@ -249,6 +257,8 @@ class Event {
       location: result[10] as String?,
       recurrenceRule: result[11] as String?,
       excludedDates: (result[12] as List<Object?>?)?.cast<int>(),
+      originalEventId: result[13] as String?,
+      originalInstanceTime: result[14] as int?,
     );
   }
 
@@ -261,7 +271,7 @@ class Event {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(id, other.id) && _deepEquals(calendarId, other.calendarId) && _deepEquals(title, other.title) && _deepEquals(isAllDay, other.isAllDay) && _deepEquals(startDate, other.startDate) && _deepEquals(endDate, other.endDate) && _deepEquals(reminders, other.reminders) && _deepEquals(attendees, other.attendees) && _deepEquals(description, other.description) && _deepEquals(url, other.url) && _deepEquals(location, other.location) && _deepEquals(recurrenceRule, other.recurrenceRule) && _deepEquals(excludedDates, other.excludedDates);
+    return _deepEquals(id, other.id) && _deepEquals(calendarId, other.calendarId) && _deepEquals(title, other.title) && _deepEquals(isAllDay, other.isAllDay) && _deepEquals(startDate, other.startDate) && _deepEquals(endDate, other.endDate) && _deepEquals(reminders, other.reminders) && _deepEquals(attendees, other.attendees) && _deepEquals(description, other.description) && _deepEquals(url, other.url) && _deepEquals(location, other.location) && _deepEquals(recurrenceRule, other.recurrenceRule) && _deepEquals(excludedDates, other.excludedDates) && _deepEquals(originalEventId, other.originalEventId) && _deepEquals(originalInstanceTime, other.originalInstanceTime);
   }
 
   @override

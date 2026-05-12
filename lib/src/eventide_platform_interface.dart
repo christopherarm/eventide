@@ -176,6 +176,13 @@ final class ETCalendar {
 /// (RFC 5545 EXDATE). Empty for events with no exceptions. On iOS Phase 1
 /// this is always empty on read because EventKit has no public EXDATE
 /// accessor; on Android it round-trips fully.
+///
+/// [originalEventId] points at the master event when this event is a
+/// detached occurrence (a single instance edited out of its recurring
+/// series). Null for non-detached events.
+///
+/// [originalInstanceTime] is the original occurrence time (UTC) that this
+/// detached event replaces. Null for non-detached events.
 final class ETEvent {
   final String id;
   final String title;
@@ -190,6 +197,11 @@ final class ETEvent {
   final String? location;
   final String? recurrenceRule;
   final Iterable<DateTime> excludedDates;
+  final String? originalEventId;
+  final DateTime? originalInstanceTime;
+
+  /// True when this event is a detached occurrence (`originalEventId` is set).
+  bool get isDetached => originalEventId != null;
 
   @override
   int get hashCode => Object.hashAll([
@@ -206,6 +218,8 @@ final class ETEvent {
     location,
     recurrenceRule,
     ...excludedDates,
+    originalEventId,
+    originalInstanceTime,
   ]);
 
   const ETEvent({
@@ -222,6 +236,8 @@ final class ETEvent {
     this.location,
     this.recurrenceRule,
     this.excludedDates = const [],
+    this.originalEventId,
+    this.originalInstanceTime,
   });
 
   @override
@@ -241,7 +257,9 @@ final class ETEvent {
           other.url == url &&
           other.location == location &&
           other.recurrenceRule == recurrenceRule &&
-          listEquals(List.from(other.excludedDates), List.from(excludedDates));
+          listEquals(List.from(other.excludedDates), List.from(excludedDates)) &&
+          other.originalEventId == originalEventId &&
+          other.originalInstanceTime == originalInstanceTime;
 }
 
 /// Represents an account.

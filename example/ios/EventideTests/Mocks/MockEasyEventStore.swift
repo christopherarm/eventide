@@ -345,7 +345,9 @@ class MockEvent {
             url: url,
             location: location,
             recurrenceRule: nil,
-            excludedDates: nil
+            excludedDates: nil,
+            originalEventId: nil,
+            originalInstanceTime: nil
         )
     }
 }

@@ -680,8 +680,76 @@ class CalendarImplem(
                                     attendees = attendees,
                                     recurrenceRule = rrule,
                                     excludedDates = excludedDates,
+                                    originalEventId = null,
+                                    originalInstanceTime = null,
                                 )
                             )
+                        }
+                    }
+
+                    // Phase 2E: second query — fetch detached exception children
+                    // whose ORIGINAL_ID points at one of the master ids we just
+                    // surfaced. Each detached child carries its own row in
+                    // CalendarContract.Events with ORIGINAL_INSTANCE_TIME set
+                    // to the time of the master occurrence it replaces.
+                    val masterIds = events.map { it.id }
+                    if (masterIds.isNotEmpty()) {
+                        val detachedProjection = arrayOf(
+                            CalendarContract.Events._ID,
+                            CalendarContract.Events.TITLE,
+                            CalendarContract.Events.DESCRIPTION,
+                            CalendarContract.Events.EVENT_LOCATION,
+                            CalendarContract.Events.DTSTART,
+                            CalendarContract.Events.DTEND,
+                            CalendarContract.Events.ALL_DAY,
+                            CalendarContract.Events.ORIGINAL_ID,
+                            CalendarContract.Events.ORIGINAL_INSTANCE_TIME,
+                        )
+                        val placeholders = masterIds.joinToString(",") { "?" }
+                        val detachedSelection =
+                            "${CalendarContract.Events.CALENDAR_ID} = ? " +
+                            "AND ${CalendarContract.Events.ORIGINAL_ID} IN ($placeholders)"
+                        val detachedArgs = (listOf(calendarId) + masterIds).toTypedArray()
+                        val detachedCursor = contentResolver.query(
+                            eventContentUri, detachedProjection,
+                            detachedSelection, detachedArgs, null
+                        )
+                        detachedCursor?.use { c ->
+                            val helper2 = DescriptionUrlHelper()
+                            while (c.moveToNext()) {
+                                val id = c.getString(c.getColumnIndexOrThrow(CalendarContract.Events._ID))
+                                val title = c.getString(c.getColumnIndexOrThrow(CalendarContract.Events.TITLE))
+                                val storedDescription = c.getString(c.getColumnIndexOrThrow(CalendarContract.Events.DESCRIPTION))
+                                val (parsedDescription, parsedUrl) = helper2.splitDescriptionAndUrl(storedDescription)
+                                val eventLocation = c.getString(c.getColumnIndexOrThrow(CalendarContract.Events.EVENT_LOCATION))
+                                val start = c.getLong(c.getColumnIndexOrThrow(CalendarContract.Events.DTSTART))
+                                val dtendIdx = c.getColumnIndexOrThrow(CalendarContract.Events.DTEND)
+                                val end = if (c.isNull(dtendIdx)) start else c.getLong(dtendIdx)
+                                val isAllDay = c.getInt(c.getColumnIndexOrThrow(CalendarContract.Events.ALL_DAY)).toBoolean()
+                                val origId = c.getLong(c.getColumnIndexOrThrow(CalendarContract.Events.ORIGINAL_ID))
+                                val origTimeIdx = c.getColumnIndexOrThrow(CalendarContract.Events.ORIGINAL_INSTANCE_TIME)
+                                val origTime = if (c.isNull(origTimeIdx)) null else c.getLong(origTimeIdx)
+
+                                events.add(
+                                    Event(
+                                        id = id,
+                                        title = title,
+                                        startDate = start,
+                                        endDate = end,
+                                        calendarId = calendarId,
+                                        description = parsedDescription,
+                                        url = parsedUrl,
+                                        location = eventLocation,
+                                        isAllDay = isAllDay,
+                                        reminders = emptyList(),
+                                        attendees = emptyList(),
+                                        recurrenceRule = null,
+                                        excludedDates = emptyList(),
+                                        originalEventId = origId.toString(),
+                                        originalInstanceTime = origTime,
+                                    )
+                                )
+                            }
                         }
                     }
 

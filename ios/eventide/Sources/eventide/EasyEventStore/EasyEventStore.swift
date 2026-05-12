@@ -274,22 +274,29 @@ final class EasyEventStore: EasyEventStoreProtocol {
 
         let rawEvents = eventStore.events(matching: predicate)
         if expandRecurring {
-            return rawEvents.map { $0.toEvent() }
+            return rawEvents.map { $0.toEvent(detachedMasters: nil) }
         }
 
-        // Master-only mode (plan AD-1 default): predicateForEvents auto-expands
-        // recurring occurrences, so we dedupe by calendarItemIdentifier — all
-        // occurrences of a series share the master's identifier, while detached
-        // occurrences (Phase 2) carry their own. The first occurrence wins.
+        // Phase 2E: separate masters from detached occurrences. The predicate
+        // returns both; we want to dedupe regular occurrences (which share
+        // their master's calendarItemIdentifier) but keep every detached
+        // event (each carries its own identifier and represents a user
+        // edit). Master-only mode emits 1 row per series + N detached rows.
         var seenIdentifiers = Set<String>()
-        var deduped: [EKEvent] = []
+        var masters: [EKEvent] = []
+        var detached: [EKEvent] = []
         for ekEvent in rawEvents {
+            if ekEvent.isDetached {
+                detached.append(ekEvent)
+                continue
+            }
             let identifier = ekEvent.calendarItemIdentifier
             if seenIdentifiers.insert(identifier).inserted {
-                deduped.append(ekEvent)
+                masters.append(ekEvent)
             }
         }
-        return deduped.map { $0.toEvent() }
+        return masters.map { $0.toEvent(detachedMasters: nil) }
+            + detached.map { $0.toEvent(detachedMasters: masters) }
     }
     
     func updateEvent(
@@ -604,8 +611,41 @@ fileprivate extension EKCalendar {
 }
 
 fileprivate extension EKEvent {
-    func toEvent() -> Event {
-        Event(
+    /// Phase 2E: when called on a detached occurrence (`isDetached == true`),
+    /// `detachedMasters` lets us locate the originating master event so we
+    /// can surface `originalEventId`. Matching prefers a shared
+    /// `calendarItemExternalIdentifier` (the iCalendar UID, identical for
+    /// master and exceptions on CalDAV-synced calendars); falls back to the
+    /// only master in the same calendar.
+    /// `originalInstanceTime` is approximated by the detached event's
+    /// `startDate` — EventKit doesn't expose RECURRENCE-ID publicly, so the
+    /// consumer is responsible for date-matching back to the master's
+    /// expanded series if precise alignment is needed.
+    func toEvent(detachedMasters: [EKEvent]?) -> Event {
+        let masterId: String?
+        let originalInstanceMs: Int64?
+        if isDetached, let masters = detachedMasters, !masters.isEmpty {
+            let extId = calendarItemExternalIdentifier
+            let matched: EKEvent? = {
+                if let extId = extId {
+                    if let m = masters.first(where: { $0.calendarItemExternalIdentifier == extId }) {
+                        return m
+                    }
+                }
+                let sameCal = masters.filter { $0.calendar.calendarIdentifier == calendar.calendarIdentifier }
+                if sameCal.count == 1 {
+                    return sameCal.first
+                }
+                return nil
+            }()
+            masterId = matched?.eventIdentifier
+            originalInstanceMs = startDate.millisecondsSince1970
+        } else {
+            masterId = nil
+            originalInstanceMs = nil
+        }
+
+        return Event(
             id: eventIdentifier,
             calendarId: calendar.calendarIdentifier,
             title: title,
@@ -626,8 +666,19 @@ fileprivate extension EKEvent {
             url: url?.absoluteString,
             location: location,
             recurrenceRule: recurrenceRules?.first.flatMap { try? RecurrenceRuleParser.serialize($0) },
-            excludedDates: nil  // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
+            excludedDates: nil,  // Phase 1 iOS limitation: EventKit has no public EXDATE accessor
+            originalEventId: masterId,
+            originalInstanceTime: originalInstanceMs
         )
+    }
+
+    /// Convenience overload for callers that don't have detached context
+    /// (e.g. the EasyEventStore.createEvent / updateEvent return paths).
+    /// The event might still be detached, but we won't be able to locate
+    /// its master from a single-event reference, so the originalEventId
+    /// stays nil.
+    func toEvent() -> Event {
+        return toEvent(detachedMasters: nil)
     }
 }
 

@@ -173,6 +173,16 @@ final class Event {
   // Phase 1 iOS limitation: read-side surfaces empty list because EventKit
   // has no public EXDATE accessor; full round-trip on Android only.
   final List<int>? excludedDates;
+  // For detached occurrences (events that were modified out of their
+  // recurring series), points at the master event's id. Null for
+  // non-detached events. iOS: EKEvent.isDetached == true. Android:
+  // ORIGINAL_ID column on CalendarContract.Events.
+  final String? originalEventId;
+  // The original occurrence time (UTC ms-since-epoch) that this detached
+  // event replaces. Null when not detached. iOS: derived from the
+  // expanded master occurrence list (best-effort match). Android:
+  // ORIGINAL_INSTANCE_TIME column.
+  final int? originalInstanceTime;
 
   const Event({
     required this.id,
@@ -188,6 +198,8 @@ final class Event {
     required this.location,
     required this.recurrenceRule,
     required this.excludedDates,
+    required this.originalEventId,
+    required this.originalInstanceTime,
   });
 }
 

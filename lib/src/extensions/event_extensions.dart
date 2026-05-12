@@ -22,6 +22,10 @@ extension EventToETEvent on Event {
               ?.map((ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true))
               .toList() ??
           const [],
+      originalEventId: originalEventId,
+      originalInstanceTime: originalInstanceTime != null
+          ? DateTime.fromMillisecondsSinceEpoch(originalInstanceTime!, isUtc: true)
+          : null,
     );
   }
 }
@@ -42,6 +46,8 @@ extension ETEventCopy on ETEvent {
       attendees: attendees,
       recurrenceRule: recurrenceRule,
       excludedDates: excludedDates,
+      originalEventId: originalEventId,
+      originalInstanceTime: originalInstanceTime,
     );
   }
 }

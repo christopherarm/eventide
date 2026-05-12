@@ -278,7 +278,9 @@ data class Event (
   val url: String? = null,
   val location: String? = null,
   val recurrenceRule: String? = null,
-  val excludedDates: List<Long>? = null
+  val excludedDates: List<Long>? = null,
+  val originalEventId: String? = null,
+  val originalInstanceTime: Long? = null
 )
  {
   companion object {
@@ -296,7 +298,9 @@ data class Event (
       val location = pigeonVar_list[10] as String?
       val recurrenceRule = pigeonVar_list[11] as String?
       val excludedDates = pigeonVar_list[12] as List<Long>?
-      return Event(id, calendarId, title, isAllDay, startDate, endDate, reminders, attendees, description, url, location, recurrenceRule, excludedDates)
+      val originalEventId = pigeonVar_list[13] as String?
+      val originalInstanceTime = pigeonVar_list[14] as Long?
+      return Event(id, calendarId, title, isAllDay, startDate, endDate, reminders, attendees, description, url, location, recurrenceRule, excludedDates, originalEventId, originalInstanceTime)
     }
   }
   fun toList(): List<Any?> {
@@ -314,6 +318,8 @@ data class Event (
       location,
       recurrenceRule,
       excludedDates,
+      originalEventId,
+      originalInstanceTime,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -324,7 +330,7 @@ data class Event (
       return true
     }
     val other = other as Event
-    return CalendarApiPigeonUtils.deepEquals(this.id, other.id) && CalendarApiPigeonUtils.deepEquals(this.calendarId, other.calendarId) && CalendarApiPigeonUtils.deepEquals(this.title, other.title) && CalendarApiPigeonUtils.deepEquals(this.isAllDay, other.isAllDay) && CalendarApiPigeonUtils.deepEquals(this.startDate, other.startDate) && CalendarApiPigeonUtils.deepEquals(this.endDate, other.endDate) && CalendarApiPigeonUtils.deepEquals(this.reminders, other.reminders) && CalendarApiPigeonUtils.deepEquals(this.attendees, other.attendees) && CalendarApiPigeonUtils.deepEquals(this.description, other.description) && CalendarApiPigeonUtils.deepEquals(this.url, other.url) && CalendarApiPigeonUtils.deepEquals(this.location, other.location) && CalendarApiPigeonUtils.deepEquals(this.recurrenceRule, other.recurrenceRule) && CalendarApiPigeonUtils.deepEquals(this.excludedDates, other.excludedDates)
+    return CalendarApiPigeonUtils.deepEquals(this.id, other.id) && CalendarApiPigeonUtils.deepEquals(this.calendarId, other.calendarId) && CalendarApiPigeonUtils.deepEquals(this.title, other.title) && CalendarApiPigeonUtils.deepEquals(this.isAllDay, other.isAllDay) && CalendarApiPigeonUtils.deepEquals(this.startDate, other.startDate) && CalendarApiPigeonUtils.deepEquals(this.endDate, other.endDate) && CalendarApiPigeonUtils.deepEquals(this.reminders, other.reminders) && CalendarApiPigeonUtils.deepEquals(this.attendees, other.attendees) && CalendarApiPigeonUtils.deepEquals(this.description, other.description) && CalendarApiPigeonUtils.deepEquals(this.url, other.url) && CalendarApiPigeonUtils.deepEquals(this.location, other.location) && CalendarApiPigeonUtils.deepEquals(this.recurrenceRule, other.recurrenceRule) && CalendarApiPigeonUtils.deepEquals(this.excludedDates, other.excludedDates) && CalendarApiPigeonUtils.deepEquals(this.originalEventId, other.originalEventId) && CalendarApiPigeonUtils.deepEquals(this.originalInstanceTime, other.originalInstanceTime)
   }
 
   override fun hashCode(): Int {
@@ -342,6 +348,8 @@ data class Event (
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.location)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.recurrenceRule)
     result = 31 * result + CalendarApiPigeonUtils.deepHash(this.excludedDates)
+    result = 31 * result + CalendarApiPigeonUtils.deepHash(this.originalEventId)
+    result = 31 * result + CalendarApiPigeonUtils.deepHash(this.originalInstanceTime)
     return result
   }
 }
