@@ -24,6 +24,17 @@
 * Android: 25 validator tests green.
 * The remaining Phase 2 / Phase 3 work (`updateEvent`, detached occurrences, RDATE, reverse-sync, BYWEEKNO, BYYEARDAY) is tracked in `fam_bowl` issue #43.
 
+### Added — Phase 2D (updateEvent)
+* New Pigeon `updateEvent` method + `UpdateSpan` enum (`thisEvent`, `thisAndFuture`, `allEvents`). Null-means-unchanged semantics on optional fields; pass `""` to clear a string field.
+* **iOS** (`EasyEventStore.updateEvent`): applies non-nil mutations on the master or a specific occurrence (located via `predicateForEvents` ±1 day on `calendarItemIdentifier`). Two iOS 26 quirks worked around: `event(withIdentifier:)` returns a stripped EKEvent without `recurrenceRules` (we re-fetch via predicate and pick the candidate with rules); saving a recurring master with `EKSpan.thisEvent` silently strips the rule (we transparently promote to `.futureEvents` when modifying a master in-place). 6 integration tests across all three spans + null-vs-empty + NOT_FOUND path.
+* **Android** (`CalendarImplem.updateEvent`): three-span dispatch — `ALL_EVENTS` updates the master row in place (handles the DURATION/DTEND coupling when start/end change), `THIS_EVENT` inserts a detached child row with `ORIGINAL_ID` + `ORIGINAL_INSTANCE_TIME`, `THIS_AND_FUTURE` terminates the master with `UNTIL = occurrence − 1 ms` (stripping any `COUNT`) and inserts a new master from the occurrence. 7 unit tests cover permission/validation gating + `withUntil` helper edge cases (replace, append, strip COUNT).
+* **Dart** (`Eventide.updateEvent` + `ETUpdateSpan`): typed wrapper with DateTime/Duration mapping. 6 mocktail tests covering span mapping, occurrence-time conversion, reminders unit conversion, RRULE pass-through, and PlatformException → ETNotFoundException rethrow.
+
+### Test state after Phase 2D
+* iOS: **127 green / 0 red**.
+* Android: 123 green / 0 red.
+* Dart: 84 green / 0 red.
+
 ## 2.2.0
 * **Definitive fix in `createEventInDefaultCalendar` & `createEventThroughNativePlatform` on Android :**: using ical format under the hood
 
