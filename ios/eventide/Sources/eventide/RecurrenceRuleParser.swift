@@ -73,8 +73,14 @@ public enum RecurrenceRuleParser {
         let daysOfTheWeek = try parseByDay(parts["BYDAY"])
         let daysOfTheMonth = try parseByMonthDay(parts["BYMONTHDAY"])
         let monthsOfTheYear = try parseByMonth(parts["BYMONTH"])
+        let setPositions = try parseSetPositions(
+            parts["BYSETPOS"],
+            hasOtherByRule: daysOfTheWeek != nil
+                || daysOfTheMonth != nil
+                || monthsOfTheYear != nil
+        )
 
-        return EKRecurrenceRule(
+        let rule = EKRecurrenceRule(
             recurrenceWith: frequency,
             interval: interval,
             daysOfTheWeek: daysOfTheWeek,
@@ -82,9 +88,16 @@ public enum RecurrenceRuleParser {
             monthsOfTheYear: monthsOfTheYear,
             weeksOfTheYear: nil,
             daysOfTheYear: nil,
-            setPositions: nil,
+            setPositions: setPositions,
             end: end
         )
+        if let wkst = try parseWkst(parts["WKST"]) {
+            // `firstDayOfTheWeek` is read-only since iOS 16; use KVC to reach
+            // the Objective-C setter that backs it. EventKit accepts this
+            // because the underlying property is `nonatomic, assign`.
+            rule.setValue(wkst, forKey: "firstDayOfTheWeek")
+        }
+        return rule
     }
 
     /// Serializes an `EKRecurrenceRule` back to an RFC 5545 RRULE string,
@@ -363,6 +376,44 @@ public enum RecurrenceRuleParser {
         return out.isEmpty ? nil : out
     }
 
+    // MARK: - BYSETPOS
+
+    /// Parses `BYSETPOS=3,-1` per RFC 5545 §3.3.10.
+    /// Values must be in [-366,-1] ∪ [1,366]; zero is forbidden.
+    /// RFC requires BYSETPOS to accompany at least one other `BYxxx` rule.
+    private static func parseSetPositions(_ s: String?, hasOtherByRule: Bool) throws -> [NSNumber]? {
+        guard let s = s, !s.isEmpty else { return nil }
+        if !hasOtherByRule {
+            throw RecurrenceRuleParserError.invalidRRule(
+                "BYSETPOS requires another BYxxx rule (RFC 5545 §3.3.10)"
+            )
+        }
+        var out: [NSNumber] = []
+        for raw in s.split(separator: ",") {
+            let token = String(raw).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let n = Int(token), n != 0, n >= -366, n <= 366 else {
+                throw RecurrenceRuleParserError.invalidRRule(
+                    "BYSETPOS must be in [-366,-1] ∪ [1,366] (got: \(token))"
+                )
+            }
+            out.append(NSNumber(value: n))
+        }
+        return out.isEmpty ? nil : out
+    }
+
+    // MARK: - WKST
+
+    /// Parses `WKST=SU` to an `EKWeekday.rawValue`. EventKit weekday raw values:
+    /// SU=1, MO=2, TU=3, WE=4, TH=5, FR=6, SA=7.
+    private static func parseWkst(_ s: String?) throws -> Int? {
+        guard let s = s, !s.isEmpty else { return nil }
+        let token = s.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard let weekday = weekdayMap[token] else {
+            throw RecurrenceRuleParserError.invalidRRule("Invalid WKST: \(token)")
+        }
+        return weekday.rawValue
+    }
+
     // MARK: - Phase 2 feature rejection
 
     /// Throws `.unsupportedFeature` if the RRULE uses a feature deferred to
@@ -370,10 +421,9 @@ public enum RecurrenceRuleParser {
     /// consumers can decide how to surface the limitation.
     private static func rejectPhase2Features(_ parts: [String: String]) {
         // Silent for now — individual parsers throw .unsupportedFeature where
-        // appropriate (e.g. positional BYDAY). Listing other deferred keys here
-        // keeps the policy explicit and discoverable.
-        _ = parts["BYSETPOS"]
-        _ = parts["WKST"]
+        // appropriate (e.g. BYWEEKNO/BYYEARDAY via rejectPhase2OnSerialize).
+        // Listing deferred keys here keeps the policy explicit and discoverable.
+        // BYSETPOS and WKST are handled in their own parsers as of Phase 2B/2C.
         _ = parts["RDATE"]
         _ = parts["EXRULE"]
         _ = parts["BYHOUR"]
