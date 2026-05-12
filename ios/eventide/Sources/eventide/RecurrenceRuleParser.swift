@@ -104,14 +104,14 @@ public enum RecurrenceRuleParser {
     /// suitable for cross-platform sync (Android `CalendarContract.Events.RRULE`,
     /// Google Calendar API, etc).
     ///
-    /// Canonical output order: `FREQ;INTERVAL;COUNT;UNTIL;BYMONTH;BYMONTHDAY;BYDAY`.
+    /// Canonical output order: `FREQ;INTERVAL;COUNT;UNTIL;BYMONTH;BYMONTHDAY;BYDAY;BYSETPOS;WKST`.
     /// INTERVAL is omitted when 1 (RFC-default). UNTIL is always emitted in
     /// UTC `Z` form even if the source value was floating or date-only.
+    /// WKST is omitted when 0 (unset) or 2 (Monday, RFC default).
     ///
     /// - Throws: `RecurrenceRuleParserError.unsupportedFeature` when the rule
-    ///   uses Phase 2 components (positional BYDAY, BYSETPOS, WKST,
-    ///   weeksOfTheYear, daysOfTheYear) — we explicitly refuse rather than
-    ///   silently drop information that would break sync.
+    ///   uses Phase 3 components (BYWEEKNO, BYYEARDAY) — explicitly refuses
+    ///   rather than silently drop information that would break sync.
     public static func serialize(_ rule: EKRecurrenceRule) throws -> String {
         try rejectPhase2OnSerialize(rule)
 
@@ -136,26 +136,32 @@ public enum RecurrenceRuleParser {
         if let dows = rule.daysOfTheWeek, !dows.isEmpty {
             parts.append("BYDAY=" + dows.map(serializeDayOfWeek).joined(separator: ","))
         }
+        if let sp = rule.setPositions, !sp.isEmpty {
+            parts.append("BYSETPOS=" + sp.map { "\($0.intValue)" }.joined(separator: ","))
+        }
+        // WKST is emitted only when non-default. EventKit uses 0 = "unset" and
+        // 2 = Monday (RFC default); skip both. Otherwise emit the SU..SA code.
+        if rule.firstDayOfTheWeek != 0 && rule.firstDayOfTheWeek != 2 {
+            if let code = serializeFirstDayOfWeek(rule.firstDayOfTheWeek) {
+                parts.append("WKST=\(code)")
+            }
+        }
         return parts.joined(separator: ";")
     }
 
     // MARK: - Serializer helpers
 
     private static func rejectPhase2OnSerialize(_ rule: EKRecurrenceRule) throws {
-        // Positional BYDAY (weekNumber != 0) is supported as of Phase 2A.
-        if let sp = rule.setPositions, !sp.isEmpty {
-            throw RecurrenceRuleParserError.unsupportedFeature(
-                "Cannot serialize BYSETPOS — Phase 2"
-            )
-        }
+        // Positional BYDAY (weekNumber != 0) supported since Phase 2A.
+        // BYSETPOS supported since Phase 2B. WKST supported since Phase 2C.
         if let woty = rule.weeksOfTheYear, !woty.isEmpty {
             throw RecurrenceRuleParserError.unsupportedFeature(
-                "Cannot serialize BYWEEKNO — Phase 2"
+                "Cannot serialize BYWEEKNO — Phase 3"
             )
         }
         if let doty = rule.daysOfTheYear, !doty.isEmpty {
             throw RecurrenceRuleParserError.unsupportedFeature(
-                "Cannot serialize BYYEARDAY — Phase 2"
+                "Cannot serialize BYYEARDAY — Phase 3"
             )
         }
     }
@@ -167,6 +173,19 @@ public enum RecurrenceRuleParser {
         case .monthly: return "MONTHLY"
         case .yearly: return "YEARLY"
         @unknown default: return "DAILY"
+        }
+    }
+
+    private static func serializeFirstDayOfWeek(_ raw: Int) -> String? {
+        switch raw {
+        case 1: return "SU"
+        case 2: return "MO"
+        case 3: return "TU"
+        case 4: return "WE"
+        case 5: return "TH"
+        case 6: return "FR"
+        case 7: return "SA"
+        default: return nil
         }
     }
 

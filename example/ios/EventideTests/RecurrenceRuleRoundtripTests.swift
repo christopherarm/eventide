@@ -125,26 +125,42 @@ final class RecurrenceRuleRoundtripTests: XCTestCase {
         XCTAssertEqual(try RecurrenceRuleParser.serialize(rule), "FREQ=MONTHLY;BYDAY=-1FR")
     }
 
-    // MARK: - Serializer refusals (Phase 2 features still deferred)
+    // MARK: - Phase 2B round-trips (BYSETPOS)
 
-    func test_serialize_refuses_bySetPos() throws {
+    func test_roundtrip_bySetPos_thirdInstance() throws {
+        try assertRoundtrip("FREQ=MONTHLY;COUNT=3;BYDAY=TU,WE,TH;BYSETPOS=3")
+    }
+
+    func test_roundtrip_bySetPos_lastWorkday() throws {
+        try assertRoundtrip("FREQ=MONTHLY;COUNT=6;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1")
+    }
+
+    func test_serialize_emits_bySetPos_negative() throws {
         let rule = EKRecurrenceRule(
             recurrenceWith: .monthly, interval: 1,
             daysOfTheWeek: [
                 EKRecurrenceDayOfWeek(dayOfTheWeek: .monday, weekNumber: 0),
-                EKRecurrenceDayOfWeek(dayOfTheWeek: .tuesday, weekNumber: 0),
+                EKRecurrenceDayOfWeek(dayOfTheWeek: .friday, weekNumber: 0),
             ],
             daysOfTheMonth: nil, monthsOfTheYear: nil,
             weeksOfTheYear: nil, daysOfTheYear: nil,
             setPositions: [-1 as NSNumber],
             end: nil
         )
-        XCTAssertThrowsError(try RecurrenceRuleParser.serialize(rule)) { error in
-            guard case RecurrenceRuleParserError.unsupportedFeature = error else {
-                XCTFail("Expected unsupportedFeature, got \(error)")
-                return
-            }
-        }
+        XCTAssertEqual(
+            try RecurrenceRuleParser.serialize(rule),
+            "FREQ=MONTHLY;BYDAY=MO,FR;BYSETPOS=-1"
+        )
+    }
+
+    // MARK: - Phase 2C round-trips (WKST)
+
+    func test_roundtrip_weeklyTueThuWkstSu() throws {
+        try assertRoundtrip("FREQ=WEEKLY;UNTIL=20261007T000000Z;WKST=SU;BYDAY=TU,TH")
+    }
+
+    func test_roundtrip_biweeklyMonSunWkstSu() throws {
+        try assertRoundtrip("FREQ=WEEKLY;INTERVAL=2;COUNT=6;BYDAY=MO,SU;WKST=SU")
     }
 
     // MARK: - Helpers
