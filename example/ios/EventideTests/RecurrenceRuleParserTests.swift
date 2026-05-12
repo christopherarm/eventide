@@ -361,19 +361,10 @@ final class RecurrenceRuleParserTests: XCTestCase {
         assertRule(rule, frequency: .weekly, until: until, daysOfTheWeek: [dow(.monday)])
     }
 
-    // MARK: - Round-trip (parse → serialize → parse) sanity
-
-    func test_serialize_throwsNotImplemented() {
-        // Documents that the serializer is the second TDD frontier.
-        // Once parsing is green, flip this test to round-trip assertions.
-        let stubRule = EKRecurrenceRule(
-            recurrenceWith: .weekly, interval: 1,
-            end: EKRecurrenceEnd(occurrenceCount: 4)
-        )
-        XCTAssertThrowsError(try RecurrenceRuleParser.serialize(stubRule)) { error in
-            XCTAssertEqual(error as? RecurrenceRuleParserError, .notImplemented)
-        }
-    }
+    // MARK: - Round-trip (parse → serialize → parse)
+    // Full coverage in `RecurrenceRuleRoundtripTests.swift`. The placeholder
+    // `test_serialize_throwsNotImplemented` that lived here in the TDD-red
+    // skeleton was deleted once `serialize()` shipped in Step G.
 
     // MARK: - Error handling
 

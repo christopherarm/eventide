@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		128A45A7C0887E1F94D5A7AB /* Pods_EventideTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A15AC955CC60E74679B0E36 /* Pods_EventideTests.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		37B441AF1290EE27D1175647 /* RecurrenceRuleRoundtripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864A3D06F21DF3488F39F508 /* RecurrenceRuleRoundtripTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		5D7F0208F9EA9B95164426FC /* RecurrenceRuleParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313CEF73088C0A1B29D63A2C /* RecurrenceRuleParserTests.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
@@ -59,6 +60,7 @@
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7A15AC955CC60E74679B0E36 /* Pods_EventideTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_EventideTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		864A3D06F21DF3488F39F508 /* RecurrenceRuleRoundtripTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecurrenceRuleRoundtripTests.swift; sourceTree = "<group>"; };
 		86AB3DD78552DA1D57F992A4 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		8AD3C42E090252E8D72E9959 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 				EA8AABD02D8D891A00A1D69B /* EventTests.swift */,
 				EAECB9432D395CA3000FAA80 /* UtilsTests.swift */,
 				313CEF73088C0A1B29D63A2C /* RecurrenceRuleParserTests.swift */,
+				864A3D06F21DF3488F39F508 /* RecurrenceRuleRoundtripTests.swift */,
 			);
 			path = EventideTests;
 			sourceTree = "<group>";
@@ -428,6 +431,7 @@
 				EA8AABD12D8D891A00A1D69B /* EventTests.swift in Sources */,
 				EA8AABCD2D8D889600A1D69B /* CalendarTests.swift in Sources */,
 				5D7F0208F9EA9B95164426FC /* RecurrenceRuleParserTests.swift in Sources */,
+				37B441AF1290EE27D1175647 /* RecurrenceRuleRoundtripTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

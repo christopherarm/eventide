@@ -91,10 +91,98 @@ public enum RecurrenceRuleParser {
     /// suitable for cross-platform sync (Android `CalendarContract.Events.RRULE`,
     /// Google Calendar API, etc).
     ///
-    /// - Throws: `RecurrenceRuleParserError` if the rule contains components
-    ///           that have no RFC 5545 representation.
+    /// Canonical output order: `FREQ;INTERVAL;COUNT;UNTIL;BYMONTH;BYMONTHDAY;BYDAY`.
+    /// INTERVAL is omitted when 1 (RFC-default). UNTIL is always emitted in
+    /// UTC `Z` form even if the source value was floating or date-only.
+    ///
+    /// - Throws: `RecurrenceRuleParserError.unsupportedFeature` when the rule
+    ///   uses Phase 2 components (positional BYDAY, BYSETPOS, WKST,
+    ///   weeksOfTheYear, daysOfTheYear) — we explicitly refuse rather than
+    ///   silently drop information that would break sync.
     public static func serialize(_ rule: EKRecurrenceRule) throws -> String {
-        throw RecurrenceRuleParserError.notImplemented
+        try rejectPhase2OnSerialize(rule)
+
+        var parts: [String] = []
+        parts.append("FREQ=\(serializeFrequency(rule.frequency))")
+        if rule.interval > 1 {
+            parts.append("INTERVAL=\(rule.interval)")
+        }
+        if let end = rule.recurrenceEnd {
+            if end.occurrenceCount > 0 {
+                parts.append("COUNT=\(end.occurrenceCount)")
+            } else if let date = end.endDate {
+                parts.append("UNTIL=\(formatUntilUtc(date))")
+            }
+        }
+        if let months = rule.monthsOfTheYear, !months.isEmpty {
+            parts.append("BYMONTH=" + months.map { "\($0.intValue)" }.joined(separator: ","))
+        }
+        if let days = rule.daysOfTheMonth, !days.isEmpty {
+            parts.append("BYMONTHDAY=" + days.map { "\($0.intValue)" }.joined(separator: ","))
+        }
+        if let dows = rule.daysOfTheWeek, !dows.isEmpty {
+            parts.append("BYDAY=" + dows.map(serializeDayOfWeek).joined(separator: ","))
+        }
+        return parts.joined(separator: ";")
+    }
+
+    // MARK: - Serializer helpers
+
+    private static func rejectPhase2OnSerialize(_ rule: EKRecurrenceRule) throws {
+        if let dows = rule.daysOfTheWeek {
+            if dows.contains(where: { $0.weekNumber != 0 }) {
+                throw RecurrenceRuleParserError.unsupportedFeature(
+                    "Cannot serialize positional BYDAY — Phase 2"
+                )
+            }
+        }
+        if let sp = rule.setPositions, !sp.isEmpty {
+            throw RecurrenceRuleParserError.unsupportedFeature(
+                "Cannot serialize BYSETPOS — Phase 2"
+            )
+        }
+        if let woty = rule.weeksOfTheYear, !woty.isEmpty {
+            throw RecurrenceRuleParserError.unsupportedFeature(
+                "Cannot serialize BYWEEKNO — Phase 2"
+            )
+        }
+        if let doty = rule.daysOfTheYear, !doty.isEmpty {
+            throw RecurrenceRuleParserError.unsupportedFeature(
+                "Cannot serialize BYYEARDAY — Phase 2"
+            )
+        }
+    }
+
+    private static func serializeFrequency(_ f: EKRecurrenceFrequency) -> String {
+        switch f {
+        case .daily: return "DAILY"
+        case .weekly: return "WEEKLY"
+        case .monthly: return "MONTHLY"
+        case .yearly: return "YEARLY"
+        @unknown default: return "DAILY"
+        }
+    }
+
+    private static func serializeDayOfWeek(_ d: EKRecurrenceDayOfWeek) -> String {
+        // weekNumber == 0 is guaranteed by rejectPhase2OnSerialize.
+        switch d.dayOfTheWeek {
+        case .sunday:    return "SU"
+        case .monday:    return "MO"
+        case .tuesday:   return "TU"
+        case .wednesday: return "WE"
+        case .thursday:  return "TH"
+        case .friday:    return "FR"
+        case .saturday:  return "SA"
+        @unknown default: return "MO"
+        }
+    }
+
+    private static func formatUntilUtc(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.timeZone = TimeZone(identifier: "UTC")!
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        return f.string(from: date)
     }
 
     // MARK: - Lexer
