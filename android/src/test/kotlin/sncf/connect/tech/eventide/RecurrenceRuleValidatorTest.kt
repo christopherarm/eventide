@@ -41,6 +41,24 @@ class RecurrenceRuleValidatorTest {
     }
 
     @Test
+    fun `accepts positional BYDAY with negative offset (Phase 2A)`() {
+        // Apple emits BYDAY=-1FR for "monthly on the last Friday".
+        assertOk("FREQ=MONTHLY;BYDAY=-1FR")
+    }
+
+    @Test
+    fun `accepts positional BYDAY in yearly context (Phase 2A)`() {
+        // Thanksgiving: yearly on the last Thursday of November.
+        assertOk("FREQ=YEARLY;BYDAY=-1TH;BYMONTH=11")
+    }
+
+    @Test
+    fun `accepts multi-positional BYDAY (Phase 2A)`() {
+        // First Monday OR last Friday of each month — RFC-legal, rare.
+        assertOk("FREQ=MONTHLY;BYDAY=1MO,-1FR")
+    }
+
+    @Test
     fun `accepts BYSETPOS (Phase 2 stored verbatim)`() {
         assertOk("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1")
     }
